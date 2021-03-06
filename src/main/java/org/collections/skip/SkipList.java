@@ -10,10 +10,8 @@ import java.util.SortedSet;
 
 /**
  * Implementation of sorted set with possible duplicates via skip list.
- *
- * Insertion: O(logN)
- * Deletion: O(logN)
- * Search: O(logN)
+ * <p>
+ * Insertion: O(logN) Deletion: O(logN) Search: O(logN)
  *
  * @param <T>
  */
@@ -81,12 +79,9 @@ public class SkipList<T extends Comparable<? super T>> implements SortedSet<T> {
   @Override
   public boolean contains(Object obj) {
     T value = (T) obj;
-    if (this.isEmpty()) {
-      return false;
-    } else {
-      LinkedList<SkipListNode<T>> stack = this.search(value, false);
-      return this.comparator.compare(value, stack.peekLast().value) == 0;
-    }
+    LinkedList<SkipListNode<T>> stack = this.search(value, false);
+    return !stack.isEmpty()
+        && this.comparator.compare(value, stack.peekLast().value) == 0;
   }
 
   @Override
@@ -117,6 +112,7 @@ public class SkipList<T extends Comparable<? super T>> implements SortedSet<T> {
   @Override
   public boolean add(T value) {
     if (this.isEmpty()) {
+      //create only node with 0-level
       this.START = new SkipListNode<>(value);
       this.END = this.START;
       this.START.levels = new LevelNode<>();
@@ -317,7 +313,7 @@ public class SkipList<T extends Comparable<? super T>> implements SortedSet<T> {
   }
 
   private LinkedList<SkipListNode<T>> search(T value, boolean forRemove) {
-    if (this.START == null) {
+    if (this.isEmpty()) {
       return new LinkedList<>();
     }
 
