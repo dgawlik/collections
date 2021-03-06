@@ -5,22 +5,22 @@ class LevelNode<T> {
   SkipListNode<T> next;
   LevelNode<T> up;
 
-  public LevelNode<T> moveUp(int steps) {
-    LevelNode<T> it = this;
-    while (it != null && steps-- > 0) {
-      it = it.up;
+  public LevelNode<T> moveUpBy(int steps) {
+    LevelNode<T> current = this;
+    while (current != null && steps-- > 0) {
+      current = current.up;
     }
-    return it;
+    return current;
   }
 
-  public int levelCount() {
-    int cnt = 0;
-    LevelNode<T> it = this;
-    while (it.up != null) {
-      it = it.up;
-      cnt++;
+  public int levelsToTop() {
+    int count = 0;
+    LevelNode<T> current = this;
+    while (current.up != null) {
+      current = current.up;
+      count++;
     }
-    return cnt;
+    return count;
   }
 
 }

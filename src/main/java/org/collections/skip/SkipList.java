@@ -21,35 +21,45 @@ public class SkipList<T extends Comparable<? super T>> implements SortedSet<T> {
 
   private static class Iterator<T> implements java.util.Iterator<T> {
 
-    private SkipListNode<T> it;
+    private SkipListNode<T> current;
 
-    public Iterator(SkipListNode<T> it) {
-      this.it = it;
+    public Iterator(SkipListNode<T> current) {
+      this.current = current;
     }
 
     @Override
     public boolean hasNext() {
-      return this.it != null;
+      return this.current != null;
     }
 
     @Override
     public T next() {
-      T val = it.value;
-      it = it.levels.next;
+      T val = current.value;
+      current = current.levels.next;
       return val;
     }
   }
 
-  private final Comparator<T> comp;
+  private final Comparator<T> comparator;
+
+  //leftmost node in skip list
+  //holds maximum number of levels
   private SkipListNode<T> START;
+
+  //rightmost node in skip list
   private SkipListNode<T> END;
-  private final Random rnd;
+
+  private final Random rng;
+
+  //skip list node count
   private int size;
+
+  //maximum number of levels
   private int maxLevel;
 
-  public SkipList(Comparator<T> comp) {
-    this.comp = comp;
-    this.rnd = new Random(1);
+  public SkipList(Comparator<T> comparator) {
+    this.comparator = comparator;
+    this.rng = new Random(1);
     this.size = 0;
     this.maxLevel = 0;
   }
@@ -71,11 +81,11 @@ public class SkipList<T extends Comparable<? super T>> implements SortedSet<T> {
   @Override
   public boolean contains(Object obj) {
     T value = (T) obj;
-    if (this.START == null) {
+    if (this.isEmpty()) {
       return false;
     } else {
       LinkedList<SkipListNode<T>> stack = this.search(value, false);
-      return this.comp.compare(value, stack.peekLast().value) == 0;
+      return this.comparator.compare(value, stack.peekLast().value) == 0;
     }
   }
 
@@ -87,10 +97,9 @@ public class SkipList<T extends Comparable<? super T>> implements SortedSet<T> {
   @Override
   public Object[] toArray() {
     Object[] arr = new Object[this.size];
-    if (this.size == 0) {
-      return arr;
+    if (!this.isEmpty()) {
+      fillArray(arr);
     }
-    fillArray(arr);
     return arr;
   }
 
@@ -99,16 +108,15 @@ public class SkipList<T extends Comparable<? super T>> implements SortedSet<T> {
   public <U> U[] toArray(U[] a) {
     U[] arr = (U[]) Array
         .newInstance(a.getClass().getComponentType(), this.size);
-    if (this.size == 0) {
-      return arr;
+    if (!this.isEmpty()) {
+      fillArray(arr);
     }
-    fillArray(arr);
     return arr;
   }
 
   @Override
   public boolean add(T value) {
-    if (this.START == null) {
+    if (this.isEmpty()) {
       this.START = new SkipListNode<>(value);
       this.END = this.START;
       this.START.levels = new LevelNode<>();
@@ -121,7 +129,7 @@ public class SkipList<T extends Comparable<? super T>> implements SortedSet<T> {
 
       //append left
       //it only happens if value < this.START
-      if (this.comp.compare(value, it.value) < 0) {
+      if (this.comparator.compare(value, it.value) < 0) {
         newN.levels.next = this.START;
         while (++levelIt <= this.maxLevel) {
           LevelNode<T> newLevel = this.growLevel(newN, levelIt);
@@ -139,7 +147,7 @@ public class SkipList<T extends Comparable<? super T>> implements SortedSet<T> {
         it.levels.next = newN;
 
         levelIt = 1;
-        double prob = this.rnd.nextDouble();
+        double prob = this.rng.nextDouble();
         while (prob < 0.5) {
           if (stack.isEmpty()) {
             this.growLevel(newN, levelIt);
@@ -151,12 +159,12 @@ public class SkipList<T extends Comparable<? super T>> implements SortedSet<T> {
             it = stack.pollLast();
 
             LevelNode<T> newLevel = this.growLevel(newN, levelIt);
-            LevelNode<T> newTop = it.levels.moveUp(levelIt);
+            LevelNode<T> newTop = it.levels.moveUpBy(levelIt);
             newLevel.next = newTop.next;
             newTop.next = newN;
             levelIt++;
           }
-          prob = this.rnd.nextDouble();
+          prob = this.rng.nextDouble();
         }
       }
     }
@@ -167,7 +175,7 @@ public class SkipList<T extends Comparable<? super T>> implements SortedSet<T> {
   @Override
   public boolean remove(Object obj) {
     T value = (T) obj;
-    if (this.START == null || !this.contains(value)) {
+    if (this.isEmpty() || !this.contains(value)) {
       return false;
     } else if (this.START.levels.next == null) {
       this.START = null;
@@ -182,9 +190,9 @@ public class SkipList<T extends Comparable<? super T>> implements SortedSet<T> {
         SkipListNode<T> nextToStart = this.START.levels.next;
         int lvl = 0;
         while (lvl <= this.maxLevel) {
-          if (nextToStart.levels.moveUp(lvl) == null) {
+          if (nextToStart.levels.moveUpBy(lvl) == null) {
             LevelNode<T> newLevel = this.growLevel(nextToStart, lvl);
-            newLevel.next = this.START.levels.moveUp(lvl).next;
+            newLevel.next = this.START.levels.moveUpBy(lvl).next;
           }
           lvl++;
         }
@@ -194,11 +202,11 @@ public class SkipList<T extends Comparable<? super T>> implements SortedSet<T> {
         SkipListNode<T> toBeRemoved = stack.peekLast().levels.next;
         do {
           SkipListNode<T> top = stack.pollLast();
-          LevelNode<T> removedLevel = toBeRemoved.levels.moveUp(levelIt);
+          LevelNode<T> removedLevel = toBeRemoved.levels.moveUpBy(levelIt);
           if (top == null || removedLevel == null) {
             break;
           }
-          top.levels.moveUp(levelIt).next = removedLevel.next;
+          top.levels.moveUpBy(levelIt).next = removedLevel.next;
           levelIt++;
         } while (!stack.isEmpty() || levelIt <= this.maxLevel);
       }
@@ -208,9 +216,9 @@ public class SkipList<T extends Comparable<? super T>> implements SortedSet<T> {
   }
 
   @Override
-  public boolean containsAll(Collection<?> c) {
-    for (Object o : c) {
-      if (!this.contains(o)) {
+  public boolean containsAll(Collection<?> collection) {
+    for (Object element : collection) {
+      if (!this.contains(element)) {
         return false;
       }
     }
@@ -218,22 +226,22 @@ public class SkipList<T extends Comparable<? super T>> implements SortedSet<T> {
   }
 
   @Override
-  public boolean addAll(Collection<? extends T> c) {
-    if (c.size() == 0) {
+  public boolean addAll(Collection<? extends T> collection) {
+    if (collection.size() == 0) {
       return false;
     }
-    for (T o : c) {
-      this.add(o);
+    for (T element : collection) {
+      this.add(element);
     }
     return true;
   }
 
   @Override
-  public boolean retainAll(Collection<?> c) {
-    SkipList<T> newSkip = new SkipList<>(this.comp);
-    for (Object o : c) {
-      if (this.contains(o)) {
-        newSkip.add((T) o);
+  public boolean retainAll(Collection<?> collection) {
+    SkipList<T> newSkip = new SkipList<>(this.comparator);
+    for (Object element : collection) {
+      if (this.contains(element)) {
+        newSkip.add((T) element);
       }
     }
     boolean changed = this.size == newSkip.size;
@@ -245,15 +253,15 @@ public class SkipList<T extends Comparable<? super T>> implements SortedSet<T> {
   }
 
   @Override
-  public boolean removeAll(Collection<?> c) {
-    boolean changed = false;
-    for (Object o : c) {
-      var result = this.remove(o);
-      if (!changed) {
-        changed = result;
+  public boolean removeAll(Collection<?> collection) {
+    boolean isChange = false;
+    for (Object element : collection) {
+      var isElemRemoved = this.remove(element);
+      if (!isChange) {
+        isChange = isElemRemoved;
       }
     }
-    return changed;
+    return isChange;
   }
 
   @Override
@@ -264,7 +272,7 @@ public class SkipList<T extends Comparable<? super T>> implements SortedSet<T> {
 
   @Override
   public Comparator<? super T> comparator() {
-    return this.comp;
+    return this.comparator;
   }
 
   @Override
@@ -294,15 +302,18 @@ public class SkipList<T extends Comparable<? super T>> implements SortedSet<T> {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("SkipList = ");
-    SkipListNode<T> it = this.START;
-    while (it != null) {
-      sb.append("[").append(it.value).append(",").append(it.levels.levelCount())
+    StringBuilder builder = new StringBuilder();
+    builder.append("SkipList = ");
+    SkipListNode<T> current = this.START;
+    while (current != null) {
+      builder.append("[")
+          .append(current.value)
+          .append(",")
+          .append(current.levels.levelsToTop())
           .append("],");
-      it = it.levels.next;
+      current = current.levels.next;
     }
-    return sb.toString();
+    return builder.toString();
   }
 
   private LinkedList<SkipListNode<T>> search(T value, boolean forRemove) {
@@ -316,20 +327,20 @@ public class SkipList<T extends Comparable<? super T>> implements SortedSet<T> {
     LinkedList<SkipListNode<T>> stack = new LinkedList<>();
 
     while (levelIt >= 0) {
-      LevelNode<T> currLevel = nodeIt.levels.moveUp(levelIt);
+      LevelNode<T> currLevel = nodeIt.levels.moveUpBy(levelIt);
       while (currLevel.next != null
-          && this.comp.compare(value, currLevel.next.value) >= 0) {
+          && this.comparator.compare(value, currLevel.next.value) >= 0) {
         nodePrev = nodeIt;
         nodeIt = currLevel.next;
-        currLevel = nodeIt.levels.moveUp(levelIt);
+        currLevel = nodeIt.levels.moveUpBy(levelIt);
       }
       if (nodePrev != null) {
-        while (nodePrev.levels.moveUp(levelIt).next != nodeIt) {
-          nodePrev = nodePrev.levels.moveUp(levelIt).next;
+        while (nodePrev.levels.moveUpBy(levelIt).next != nodeIt) {
+          nodePrev = nodePrev.levels.moveUpBy(levelIt).next;
         }
       }
       levelIt--;
-      if (forRemove && this.comp.compare(value, nodeIt.value) == 0) {
+      if (forRemove && this.comparator.compare(value, nodeIt.value) == 0) {
         stack.offerLast(nodePrev);
       } else {
         stack.offerLast(nodeIt);
@@ -349,7 +360,7 @@ public class SkipList<T extends Comparable<? super T>> implements SortedSet<T> {
 
   private LevelNode<T> growLevel(SkipListNode<T> node, int level) {
     LevelNode<T> newLevel = new LevelNode<>();
-    LevelNode<T> oldTop = node.levels.moveUp(level - 1);
+    LevelNode<T> oldTop = node.levels.moveUpBy(level - 1);
     oldTop.up = newLevel;
     return newLevel;
   }
