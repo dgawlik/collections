@@ -501,84 +501,96 @@ public class BTree<T extends Comparable<? super T>> implements
   }
 
 
+  /** Exponential search in array.
+   * Returns index of value or index of adjacent value.
+   * If value is lower than middle value, search
+   * is from left, otherwise from right.
+   *
+   * @param arr array to search
+   * @param value searched value
+   * @param end limit of contents of array inclusive
+   * @return
+   */
   private int searchLeaf(T[] arr, T value, int end) {
-    int m = end / 2;
-    if (this.comparator.compare(value, arr[m]) < 0) {
-      int base = 0;
-      int prevBase = 0;
-      int off = 1;
-      while (true) {
+    int middle = end / 2;
+    int checkpoint, nextCheckpoint, offset, sign;
 
-        if (base + off <= end
-            && comparator.compare(value, arr[base + off]) >= 0) {
-          off <<= 1;
-        } else {
-          prevBase = base;
-          base = base + off / 2;
-          off = 1;
-        }
-        if (base == prevBase && off == 1) {
-          return base;
-        }
-      }
+    if (this.comparator.compare(value, arr[middle]) < 0) {
+      checkpoint = 0;
+      nextCheckpoint = 0;
+      offset = 1;
+      sign = 1;
     } else {
-      int base = end;
-      int prevBase = 0;
-      int off = 1;
-      while (true) {
+      checkpoint = end;
+      nextCheckpoint = end;
+      offset = 1;
+      sign = -1;
+    }
 
-        if (base - off >= 0
-            && comparator.compare(value, arr[base - off]) <= 0) {
-          off <<= 1;
-        } else {
-          prevBase = base;
-          base = base - off / 2;
-          off = 1;
-        }
-        if (base == prevBase && off == 1) {
-          return base;
-        }
+    while (true) {
+      if (
+          (sign == 1
+              ? (checkpoint + offset <= end)
+              : (checkpoint - offset >= 0)
+          ) && comparator.compare(
+              value,
+              arr[checkpoint + offset * sign]
+          ) * sign >= 0
+      ) {
+        nextCheckpoint = checkpoint + offset * sign;
+        offset <<= 1;
+      } else {
+        checkpoint = nextCheckpoint;
+        offset = 1;
+      }
+      if (checkpoint == nextCheckpoint) {
+        return checkpoint;
       }
     }
   }
 
+  /** Exponential search in array.
+   * If value lower than middle point search is from left
+   * otherwise from right.
+   * Always returns index on the left of first greater
+   * point than value.
+   *
+   * @param arr searched links array
+   * @param value value in search
+   * @param end limit of the elements inclusive
+   * @return
+   */
   private int searchNode(T[] arr, T value, int end) {
-    int m = end / 2;
-    if (this.comparator.compare(value, arr[m]) < 0) {
-      int base = 0;
-      int prevBase = 0;
-      int off = 1;
-      while (true) {
-
-        if (base + off + 1 <= end
-            && comparator.compare(value, arr[base + off + 1]) >= 0) {
-          off <<= 1;
-        } else {
-          prevBase = base;
-          base = base + off / 2;
-          off = 1;
-        }
-        if (base == prevBase && off == 1) {
-          return base;
-        }
-      }
+    int middle = end / 2;
+    int checkpoint, nextCheckpoint, offset, sign;
+    if (this.comparator.compare(value, arr[middle]) < 0) {
+      checkpoint = 0;
+      nextCheckpoint = 0;
+      offset = 1;
+      sign = 1;
     } else {
-      int base = end;
-      int prevBase = 0;
-      int off = 1;
-      while (true) {
-
-        if (base - off >= 0
-            && comparator.compare(value, arr[base - off + 1]) < 0) {
-          off <<= 1;
-        } else {
-          prevBase = base;
-          base = base - off / 2;
-          off = 1;
-        }
-        if (base == prevBase && off == 1) {
-          return base;
-        }
+      checkpoint = end;
+      nextCheckpoint = end;
+      offset = 1;
+      sign = -1;
+    }
+    while (true) {
+      if (
+          (sign == 1
+              ? (checkpoint + offset + 1 <= end) :
+              (checkpoint - offset >= 0)
+          ) && (sign == 1
+              ? comparator.compare(value, arr[checkpoint + offset + 1]) >= 0
+              : comparator.compare(value, arr[checkpoint - offset + 1]) < 0)
+      ){
+        nextCheckpoint = checkpoint + offset*sign;
+        offset <<= 1;
+      } else {
+        checkpoint = nextCheckpoint;
+        offset = 1;
+      }
+      if (checkpoint == nextCheckpoint) {
+        return checkpoint;
       }
     }
   }
