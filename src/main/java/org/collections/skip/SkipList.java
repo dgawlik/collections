@@ -5,7 +5,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.Random;
-import java.util.SortedSet;
+import org.collections.Multiset;
 
 
 /**
@@ -15,7 +15,7 @@ import java.util.SortedSet;
  *
  * @param <T>
  */
-public class SkipList<T extends Comparable<? super T>> implements SortedSet<T> {
+public class SkipList<T extends Comparable<? super T>> implements Multiset<T> {
 
   private static class Iterator<T> implements java.util.Iterator<T> {
 
@@ -111,59 +111,65 @@ public class SkipList<T extends Comparable<? super T>> implements SortedSet<T> {
 
   @Override
   public boolean add(T value) {
-    if (this.isEmpty()) {
-      //create only node with 0-level
-      this.START = new SkipListNode<>(value);
-      this.END = this.START;
-      this.START.levels = new LevelNode<>();
+    LinkedList<SkipListNode<T>> visitedStack = this.search(value, false);
+    SkipListNode<T> insertedNode = new SkipListNode<>(value);
+
+    if (visitedStack.isEmpty()) {
+      //add only node with 0-level
+      this.START = this.END = insertedNode;
     } else {
-      LinkedList<SkipListNode<T>> stack = this.search(value, false);
-      int levelIt = 0;
-      SkipListNode<T> it = stack.pollLast();
-      SkipListNode<T> newN = new SkipListNode<>(value);
-      newN.levels = new LevelNode<>();
 
-      //append left
+      //stack of visited level-nodes
+      //shallowest level on the top
+      SkipListNode<T> top = visitedStack.pollLast();
+
       //it only happens if value < this.START
-      if (this.comparator.compare(value, it.value) < 0) {
-        newN.levels.next = this.START;
-        while (++levelIt <= this.maxLevel) {
-          LevelNode<T> newLevel = this.growLevel(newN, levelIt);
-          newLevel.next = this.START;
-        }
-        this.START = newN;
+      //switch START.value with insertedNode.value
+      //and add insertedNode as usual
+      if (this.comparator.compare(value, top.value) < 0) {
+        T temp = this.START.value;
+        this.START.value = insertedNode.value;
+        insertedNode.value = temp;
       }
-      //append right
-      //all other cases
-      else {
-        if (it.levels.next == null) {
-          this.END = newN;
-        }
-        newN.levels.next = it.levels.next;
-        it.levels.next = newN;
 
-        levelIt = 1;
-        double prob = this.rng.nextDouble();
-        while (prob < 0.5) {
-          if (stack.isEmpty()) {
-            this.growLevel(newN, levelIt);
-            LevelNode<T> startLevel = this.growLevel(this.START, levelIt);
-            startLevel.next = newN;
-            this.maxLevel++;
-            break;
-          } else {
-            it = stack.pollLast();
+      //if shallowest level next points
+      //to null we are at the end of list
+      if (top.levels.next == null) {
+        this.END = insertedNode;
+      }
+      //insert node and update shallowest level reference
+      insertedNode.levels.next = top.levels.next;
+      top.levels.next = insertedNode;
 
-            LevelNode<T> newLevel = this.growLevel(newN, levelIt);
-            LevelNode<T> newTop = it.levels.moveUpBy(levelIt);
-            newLevel.next = newTop.next;
-            newTop.next = newN;
-            levelIt++;
-          }
-          prob = this.rng.nextDouble();
-        }
+      int levelCounter = 1;
+      double prob = this.rng.nextDouble();
+
+      //update levels references until maxLevel
+      //is reached or randomized variable cuts-off
+      //the loop
+      while (!visitedStack.isEmpty() && prob < 0.5) {
+        top = visitedStack.pollLast();
+
+        LevelNode<T> insertedLevel = this.newLevel(insertedNode, levelCounter);
+        LevelNode<T> predecessorLevel = top.levels.moveUpBy(levelCounter);
+        insertedLevel.next = predecessorLevel.next;
+        predecessorLevel.next = insertedNode;
+        levelCounter++;
+
+        prob = this.rng.nextDouble();
+      }
+
+      //we reached current maximum number of
+      //levels and need to extend this.START
+      //and insertedNode by one level
+      if (visitedStack.isEmpty() && prob < 0.5) {
+        this.newLevel(insertedNode, levelCounter);
+        LevelNode<T> startLevel = this.newLevel(this.START, levelCounter);
+        startLevel.next = insertedNode;
+        this.maxLevel++;
       }
     }
+
     this.size++;
     return true;
   }
@@ -187,7 +193,7 @@ public class SkipList<T extends Comparable<? super T>> implements SortedSet<T> {
         int lvl = 0;
         while (lvl <= this.maxLevel) {
           if (nextToStart.levels.moveUpBy(lvl) == null) {
-            LevelNode<T> newLevel = this.growLevel(nextToStart, lvl);
+            LevelNode<T> newLevel = this.newLevel(nextToStart, lvl);
             newLevel.next = this.START.levels.moveUpBy(lvl).next;
           }
           lvl++;
@@ -272,21 +278,6 @@ public class SkipList<T extends Comparable<? super T>> implements SortedSet<T> {
   }
 
   @Override
-  public SortedSet<T> subSet(T fromElement, T toElement) {
-    throw new IllegalStateException("Not implemented!");
-  }
-
-  @Override
-  public SortedSet<T> headSet(T toElement) {
-    throw new IllegalStateException("Not implemented!");
-  }
-
-  @Override
-  public SortedSet<T> tailSet(T fromElement) {
-    throw new IllegalStateException("Not implemented!");
-  }
-
-  @Override
   public T first() {
     return this.START.value;
   }
@@ -354,7 +345,7 @@ public class SkipList<T extends Comparable<? super T>> implements SortedSet<T> {
     }
   }
 
-  private LevelNode<T> growLevel(SkipListNode<T> node, int level) {
+  private LevelNode<T> newLevel(SkipListNode<T> node, int level) {
     LevelNode<T> newLevel = new LevelNode<>();
     LevelNode<T> oldTop = node.levels.moveUpBy(level - 1);
     oldTop.up = newLevel;
