@@ -181,11 +181,11 @@ public class SkipList<T extends Comparable<? super T>> implements Multiset<T> {
   @Override
   public boolean remove(Object obj) {
     T value = (T) obj;
-    LinkedList<SkipListNode<T>> visitedStack = this.search(value, true);
 
     if (!this.contains(value)) {
       return false;
     }
+    //from this point on presence of value is assumed
 
     //the only node matches query
     if (this.size == 1) {
@@ -194,30 +194,39 @@ public class SkipList<T extends Comparable<? super T>> implements Multiset<T> {
       return true;
     }
 
-    //remove this.START
+    LinkedList<SkipListNode<T>> visitedStack = this.search(value, true);
+
     if (visitedStack.peekLast() == null) {
+      //the value is first in skip list
       SkipListNode<T> nextToStart = this.START.levels.next;
-      int lvl = 0;
-      while (lvl <= this.maxLevel) {
-        if (nextToStart.levels.moveUpBy(lvl) == null) {
-          LevelNode<T> newLevel = this.newLevel(nextToStart, lvl);
-          newLevel.next = this.START.levels.moveUpBy(lvl).next;
+      int currentLevel = 0;
+
+      //pick node next to start if number of levels is
+      //smaller than maximum rebuild them moving bottom up
+      while (currentLevel <= this.maxLevel) {
+        if (nextToStart.levels.moveUpBy(currentLevel) == null) {
+          LevelNode<T> insertedLevel = this.newLevel(nextToStart, currentLevel);
+          insertedLevel.next = this.START.levels.moveUpBy(currentLevel).next;
         }
-        lvl++;
+        currentLevel++;
       }
       this.START = nextToStart;
     } else {
-      int levelIt = 0;
+      int currentLevel = 0;
       SkipListNode<T> toBeRemoved = visitedStack.peekLast().levels.next;
+
+      //moving bottom up rebuild level links of node on left
+      //to the removed node to point them to links on the
+      //right of removed node
       do {
         SkipListNode<T> top = visitedStack.pollLast();
-        LevelNode<T> removedLevel = toBeRemoved.levels.moveUpBy(levelIt);
+        LevelNode<T> removedLevel = toBeRemoved.levels.moveUpBy(currentLevel);
         if (top == null || removedLevel == null) {
           break;
         }
-        top.levels.moveUpBy(levelIt).next = removedLevel.next;
-        levelIt++;
-      } while (!visitedStack.isEmpty() || levelIt <= this.maxLevel);
+        top.levels.moveUpBy(currentLevel).next = removedLevel.next;
+        currentLevel++;
+      } while (!visitedStack.isEmpty() || currentLevel <= this.maxLevel);
     }
     this.size--;
     return true;
