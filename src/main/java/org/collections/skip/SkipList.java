@@ -9,9 +9,13 @@ import org.collections.Multiset;
 
 
 /**
- * Implementation of sorted set with possible duplicates via skip list.
+ * Skip list as sorted multiset.
+ * Each node has randomized number of levels indexed from 0.
+ * Each level-node points to first plain-node with same level height.
  * <p>
- * Insertion: O(logN) Deletion: O(logN) Search: O(logN)
+ * Insertion: O(logN)
+ * Deletion: O(logN)
+ * Search: O(logN)
  *
  * @param <T>
  */
@@ -177,44 +181,47 @@ public class SkipList<T extends Comparable<? super T>> implements Multiset<T> {
   @Override
   public boolean remove(Object obj) {
     T value = (T) obj;
-    if (this.isEmpty() || !this.contains(value)) {
-      return false;
-    } else if (this.START.levels.next == null) {
-      this.START = null;
-      this.END = null;
-      this.size--;
-      return true;
-    } else {
-      LinkedList<SkipListNode<T>> stack = this.search(value, true);
+    LinkedList<SkipListNode<T>> visitedStack = this.search(value, true);
 
-      //remove this.START
-      if (stack.peekLast() == null) {
-        SkipListNode<T> nextToStart = this.START.levels.next;
-        int lvl = 0;
-        while (lvl <= this.maxLevel) {
-          if (nextToStart.levels.moveUpBy(lvl) == null) {
-            LevelNode<T> newLevel = this.newLevel(nextToStart, lvl);
-            newLevel.next = this.START.levels.moveUpBy(lvl).next;
-          }
-          lvl++;
-        }
-        this.START = nextToStart;
-      } else {
-        int levelIt = 0;
-        SkipListNode<T> toBeRemoved = stack.peekLast().levels.next;
-        do {
-          SkipListNode<T> top = stack.pollLast();
-          LevelNode<T> removedLevel = toBeRemoved.levels.moveUpBy(levelIt);
-          if (top == null || removedLevel == null) {
-            break;
-          }
-          top.levels.moveUpBy(levelIt).next = removedLevel.next;
-          levelIt++;
-        } while (!stack.isEmpty() || levelIt <= this.maxLevel);
-      }
+    if (!this.contains(value)) {
+      return false;
+    }
+
+    //the only node matches query
+    if (this.size == 1) {
+      this.START = this.END = null;
       this.size--;
       return true;
     }
+
+    //remove this.START
+    if (visitedStack.peekLast() == null) {
+      SkipListNode<T> nextToStart = this.START.levels.next;
+      int lvl = 0;
+      while (lvl <= this.maxLevel) {
+        if (nextToStart.levels.moveUpBy(lvl) == null) {
+          LevelNode<T> newLevel = this.newLevel(nextToStart, lvl);
+          newLevel.next = this.START.levels.moveUpBy(lvl).next;
+        }
+        lvl++;
+      }
+      this.START = nextToStart;
+    } else {
+      int levelIt = 0;
+      SkipListNode<T> toBeRemoved = visitedStack.peekLast().levels.next;
+      do {
+        SkipListNode<T> top = visitedStack.pollLast();
+        LevelNode<T> removedLevel = toBeRemoved.levels.moveUpBy(levelIt);
+        if (top == null || removedLevel == null) {
+          break;
+        }
+        top.levels.moveUpBy(levelIt).next = removedLevel.next;
+        levelIt++;
+      } while (!visitedStack.isEmpty() || levelIt <= this.maxLevel);
+    }
+    this.size--;
+    return true;
+
   }
 
   @Override
@@ -303,37 +310,53 @@ public class SkipList<T extends Comparable<? super T>> implements Multiset<T> {
     return builder.toString();
   }
 
+  /** Traverses skip list top-down pushing nodes
+   * of corresponding levels on the stack.
+   * If forRemove is true nodes predecessors are
+   * pushed instead.
+   *
+   * @param value searched value
+   * @param forRemove if stack is used for remove procedure
+   * @return
+   */
   private LinkedList<SkipListNode<T>> search(T value, boolean forRemove) {
     if (this.isEmpty()) {
       return new LinkedList<>();
     }
 
-    int levelIt = this.maxLevel;
-    SkipListNode<T> nodeIt = this.START;
-    SkipListNode<T> nodePrev = null;
-    LinkedList<SkipListNode<T>> stack = new LinkedList<>();
+    int currentLevel = this.maxLevel;
+    SkipListNode<T> currentNode = this.START;
+    SkipListNode<T> predecessorNode = null;
+    LinkedList<SkipListNode<T>> visitedStack = new LinkedList<>();
 
-    while (levelIt >= 0) {
-      LevelNode<T> currLevel = nodeIt.levels.moveUpBy(levelIt);
+    while (currentLevel >= 0) {
+      //get level on given height
+      LevelNode<T> currLevel = currentNode.levels.moveUpBy(currentLevel);
+
+      //iterate until end or next node on the right is greater than
+      //searched value
       while (currLevel.next != null
           && this.comparator.compare(value, currLevel.next.value) >= 0) {
-        nodePrev = nodeIt;
-        nodeIt = currLevel.next;
-        currLevel = nodeIt.levels.moveUpBy(levelIt);
+        //hop on to next link and upgrade level to defined height
+        predecessorNode = currentNode;
+        currentNode = currLevel.next;
+        currLevel = currentNode.levels.moveUpBy(currentLevel);
       }
-      if (nodePrev != null) {
-        while (nodePrev.levels.moveUpBy(levelIt).next != nodeIt) {
-          nodePrev = nodePrev.levels.moveUpBy(levelIt).next;
+      //on lower levels predecessor node can be lagging couple
+      //of hops behind current node, let's rewind it
+      if (predecessorNode != null) {
+        while (predecessorNode.levels.moveUpBy(currentLevel).next != currentNode) {
+          predecessorNode = predecessorNode.levels.moveUpBy(currentLevel).next;
         }
       }
-      levelIt--;
-      if (forRemove && this.comparator.compare(value, nodeIt.value) == 0) {
-        stack.offerLast(nodePrev);
+      currentLevel--;
+      if (forRemove && this.comparator.compare(value, currentNode.value) == 0) {
+        visitedStack.offerLast(predecessorNode);
       } else {
-        stack.offerLast(nodeIt);
+        visitedStack.offerLast(currentNode);
       }
     }
-    return stack;
+    return visitedStack;
   }
 
   private <U> void fillArray(U[] arr) {
