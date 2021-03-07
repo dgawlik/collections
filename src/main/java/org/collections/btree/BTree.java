@@ -7,14 +7,13 @@ import java.util.LinkedList;
 
 
 /**
- * BTree is sorted multiset implemented as tree with high branching factor.
- * Number of branches is configurable.
- * <p>
- * Insertion: O(levels*bucket) ~ O(1)
- * <p>
- * Removal: O(levels*bucket) ~ O(1)
- * <p>
- * Contains: O(levels*log(bucket)) ~ O(1)
+ * Sorted multiset implemented as tree with high branching factor.
+ * Number of branches in nodes is configurable.
+ *
+ * D - depth, B - branching factor
+ * Insertion: O(D*B) ~ O(1)
+ * Removal: O(D*B) ~ O(1)
+ * Contains: O(D*logB) ~ O(1)
  *
  * @param <T> type that this collection holds
  */
@@ -42,13 +41,88 @@ public class BTree<T extends Comparable<? super T>> implements
     }
   }
 
-  private Comparator<T> c;
-  private Node<T> root;
-  private int size;
-  private int BUCKET_MAX_SIZE;
+  /** BTree single node can be leaf or internal.
+   *
+   * @param <T> held value type
+   */
+  private static class Node<T> {
 
-  public BTree(Comparator<T> c, int BUCKET_MAX_SIZE) {
-    this.c = c;
+    //if leaf holds sorted values
+    //and if node pivots[i] holds minimum value
+    //held by subtree at links[i]
+    T[] pivots;
+
+    //links to subtrees if leaf this field is null
+    Node<T>[] links;
+
+    //is leaf or node?
+    boolean isLeaf;
+
+    //upper exclusive bound of elements contained
+    //in pivots and links
+    int top;
+
+    public Node(T[] values, int top) {
+      this.pivots = values;
+      this.isLeaf = true;
+      this.top = top;
+    }
+
+    public Node(Node<T>[] links, int top) {
+      this.links = links;
+      this.top = top;
+      this.isLeaf = false;
+      this.pivots = (T[]) Array
+          .newInstance(links[0].pivots[0].getClass(),
+              links.length);
+      for (int i = 0; i < top; i++) {
+        this.pivots[i] = this.links[i].pivots[0];
+      }
+    }
+
+    public static <U> Node<U> createLeaf(U[] values, int top) {
+      return new Node<>(values, top);
+    }
+
+    public static <U> Node<U> createNode(Node<U>[] links, int top) {
+      return new Node<>(links, top);
+    }
+
+    public static <U> Node<U> createSingleton(U value, int BUCKET_MAX_SIZE) {
+      U[] arr = (U[]) Array
+          .newInstance(value.getClass(),
+              BUCKET_MAX_SIZE + 1);
+      arr[0] = value;
+      return new Node<>(arr, 1);
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder builder = new StringBuilder();
+      builder.append("[");
+      for (int i = 0; i < top; i++) {
+        if (this.isLeaf) {
+          builder.append(this.pivots[i]).append(",");
+        } else {
+          builder.append(this.links[i]).append(",");
+        }
+      }
+      builder.append("]");
+      return builder.toString();
+    }
+  }
+
+  private final Comparator<T> comparator;
+
+  private final int BUCKET_MAX_SIZE;
+
+  private Node<T> root;
+
+  private int size;
+
+
+  public BTree(Comparator<T> comparator, int BUCKET_MAX_SIZE) {
+    this.comparator = comparator;
     this.size = 0;
     this.BUCKET_MAX_SIZE = BUCKET_MAX_SIZE;
   }
@@ -59,26 +133,26 @@ public class BTree<T extends Comparable<? super T>> implements
 
   @Override
   public Comparator<? super T> comparator() {
-    return this.c;
+    return this.comparator;
   }
 
 
   @Override
   public T first() {
-    Node<T> it = this.root;
-    while (!it.isLeaf) {
-      it = it.links[0];
+    var node = this.root;
+    while (!node.isLeaf) {
+      node = node.links[0];
     }
-    return it.pivots[0];
+    return node.pivots[0];
   }
 
   @Override
   public T last() {
-    Node<T> it = this.root;
-    while (!it.isLeaf) {
-      it = it.links[it.top - 1];
+    var node = this.root;
+    while (!node.isLeaf) {
+      node = node.links[node.top - 1];
     }
-    return it.pivots[it.top - 1];
+    return node.pivots[node.top - 1];
   }
 
   @Override
@@ -104,7 +178,7 @@ public class BTree<T extends Comparable<? super T>> implements
     }
     it = it1;
     int ind = this.searchLeaf(it.pivots, (T) value, it.top - 1);
-    return this.c.compare((T) value, it.pivots[ind]) == 0;
+    return this.comparator.compare((T) value, it.pivots[ind]) == 0;
   }
 
 
@@ -133,7 +207,7 @@ public class BTree<T extends Comparable<? super T>> implements
   @Override
   public boolean add(T value) {
     if (this.root == null) {
-      this.root = Node.singleton(value, this.BUCKET_MAX_SIZE);
+      this.root = Node.createSingleton(value, this.BUCKET_MAX_SIZE);
     } else {
       this.insert(value);
     }
@@ -229,7 +303,7 @@ public class BTree<T extends Comparable<? super T>> implements
     }
 
     int ind = this.searchLeaf(it.pivots, value, it.top - 1);
-    if (this.c.compare(value, it.pivots[ind]) > 0) {
+    if (this.comparator.compare(value, it.pivots[ind]) > 0) {
       ind++;
     }
 
@@ -291,10 +365,10 @@ public class BTree<T extends Comparable<? super T>> implements
     }
 
     int ind = this.searchLeaf(it.pivots, value, it.top - 1);
-    if (ind > 0 && this.c.compare(value, it.pivots[ind]) < 0) {
+    if (ind > 0 && this.comparator.compare(value, it.pivots[ind]) < 0) {
       ind--;
     }
-    if (this.c.compare(value, it.pivots[ind]) == 0) {
+    if (this.comparator.compare(value, it.pivots[ind]) == 0) {
       System
           .arraycopy(it.pivots, ind + 1, it.pivots, ind, it.top - 1 - ind);
 
@@ -358,13 +432,13 @@ public class BTree<T extends Comparable<? super T>> implements
     return ind2;
   }
 
-  private void insertMergeNode(Node<T> it, int ind, Object mergedArr, int ind2) {
+  private void insertMergeNode(Node<T> it, int ind, Object mergedArr,
+      int ind2) {
     Node<T> mergedN;
-    if(it.links[0].isLeaf){
-      mergedN = new Node<>((T[])mergedArr, ind2);
-    }
-    else{
-      mergedN = new Node<>((Node[])mergedArr, ind2);
+    if (it.links[0].isLeaf) {
+      mergedN = new Node<>((T[]) mergedArr, ind2);
+    } else {
+      mergedN = new Node<>((Node[]) mergedArr, ind2);
     }
 
     System
@@ -429,14 +503,14 @@ public class BTree<T extends Comparable<? super T>> implements
 
   private int searchLeaf(T[] arr, T value, int end) {
     int m = end / 2;
-    if (this.c.compare(value, arr[m]) < 0) {
+    if (this.comparator.compare(value, arr[m]) < 0) {
       int base = 0;
       int prevBase = 0;
       int off = 1;
       while (true) {
 
         if (base + off <= end
-            && c.compare(value, arr[base + off]) >= 0) {
+            && comparator.compare(value, arr[base + off]) >= 0) {
           off <<= 1;
         } else {
           prevBase = base;
@@ -454,7 +528,7 @@ public class BTree<T extends Comparable<? super T>> implements
       while (true) {
 
         if (base - off >= 0
-            && c.compare(value, arr[base - off]) <= 0) {
+            && comparator.compare(value, arr[base - off]) <= 0) {
           off <<= 1;
         } else {
           prevBase = base;
@@ -470,14 +544,14 @@ public class BTree<T extends Comparable<? super T>> implements
 
   private int searchNode(T[] arr, T value, int end) {
     int m = end / 2;
-    if (this.c.compare(value, arr[m]) < 0) {
+    if (this.comparator.compare(value, arr[m]) < 0) {
       int base = 0;
       int prevBase = 0;
       int off = 1;
       while (true) {
 
         if (base + off + 1 <= end
-            && c.compare(value, arr[base + off + 1]) >= 0) {
+            && comparator.compare(value, arr[base + off + 1]) >= 0) {
           off <<= 1;
         } else {
           prevBase = base;
@@ -495,7 +569,7 @@ public class BTree<T extends Comparable<? super T>> implements
       while (true) {
 
         if (base - off >= 0
-            && c.compare(value, arr[base - off + 1]) < 0) {
+            && comparator.compare(value, arr[base - off + 1]) < 0) {
           off <<= 1;
         } else {
           prevBase = base;
@@ -506,55 +580,6 @@ public class BTree<T extends Comparable<? super T>> implements
           return base;
         }
       }
-    }
-  }
-
-  public static class Node<T> {
-
-    T[] pivots;
-    Node<T>[] links;
-    boolean isLeaf;
-    int top;
-
-    public Node(T[] values, int top) {
-      this.pivots = values;
-      this.isLeaf = true;
-      this.top = top;
-    }
-
-    public Node(Node<T>[] links, int top) {
-      this.links = links;
-      this.top = top;
-      this.isLeaf = false;
-      this.pivots = (T[]) Array
-          .newInstance(links[0].pivots[0].getClass(),
-              links.length);
-      for (int i = 0; i < top; i++) {
-        this.pivots[i] = this.links[i].pivots[0];
-      }
-    }
-
-    public static <U> Node<U> singleton(U value, int BUCKET_MAX_SIZE) {
-      U[] arr = (U[]) Array
-          .newInstance(value.getClass(),
-              BUCKET_MAX_SIZE + 1);
-      arr[0] = value;
-      return new Node<>(arr, 1);
-    }
-
-    @Override
-    public String toString() {
-      StringBuilder sb = new StringBuilder();
-      sb.append("[");
-      for (int i = 0; i < top; i++) {
-        if (this.isLeaf) {
-          sb.append(this.pivots[i]).append(",");
-        } else {
-          sb.append(this.links[i]).append(",");
-        }
-      }
-      sb.append("]");
-      return sb.toString();
     }
   }
 }
