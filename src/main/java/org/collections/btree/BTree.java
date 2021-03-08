@@ -24,7 +24,7 @@ public class BTree<T extends Comparable<? super T>> implements
   @SuppressWarnings("unchecked")
   private static class Iterator<T> implements java.util.Iterator<T> {
 
-    private Object[] arr;
+    private final Object[] arr;
     private int top;
 
     public Iterator(T[] arr) {
@@ -327,7 +327,7 @@ public class BTree<T extends Comparable<? super T>> implements
 
     while (!stack.isEmpty() && insertedOnCurrentLevel != null) {
       rollUpNode = stack.pollLast();
-      int rollUpNodeIndex = stackInd.pollLast();
+      @SuppressWarnings("ConstantConditions") int rollUpNodeIndex = stackInd.pollLast();
 
       this.fillIn(rollUpNode.links, insertedOnCurrentLevel, rollUpNodeIndex + 1,
           rollUpNode.top);
@@ -403,7 +403,7 @@ public class BTree<T extends Comparable<? super T>> implements
     Node rollUpNode;
     while (!visitedStack.isEmpty()) {
       rollUpNode = visitedStack.pollLast();
-      int ind = visitedIndicesStack.pollLast();
+      @SuppressWarnings("ConstantConditions") int ind = visitedIndicesStack.pollLast();
 
       rollUpNode.pivots[ind] = ((Node)rollUpNode.links[ind]).pivots[0];
 
@@ -468,7 +468,7 @@ public class BTree<T extends Comparable<? super T>> implements
    * with right half
    *
    * @param it node under operations
-   * @return
+   * @return new node to be inserted
    */
   private Node growPivots(Node it) {
     Object[] rightArr =  new Object[BUCKET_MAX_SIZE + 1];
@@ -486,7 +486,7 @@ public class BTree<T extends Comparable<? super T>> implements
    * with right half
    *
    * @param it node under operations
-   * @return
+   * @return new node to be inserted
    */
   private Node growLinks(Node it) {
     Object[] rightArr = new Object[BUCKET_MAX_SIZE + 1];
@@ -531,7 +531,7 @@ public class BTree<T extends Comparable<? super T>> implements
    * @param arr array to search
    * @param value searched value
    * @param end limit of contents of array inclusive
-   * @return
+   * @return index in pivots
    */
   private int searchLeaf(Object[] arr, T value, int end) {
     int middle = end / 2;
@@ -579,7 +579,7 @@ public class BTree<T extends Comparable<? super T>> implements
    * @param arr searched links array
    * @param value value in search
    * @param end limit of the elements inclusive
-   * @return
+   * @return index in links
    */
   private int searchNode(Object[] arr, T value, int end) {
     int middle = end / 2;
