@@ -77,11 +77,13 @@ public class BTree<T extends Comparable<? super T>> implements
       }
     }
 
-    public static Node createLeaf(Object[] values, int top, int BUCKET_MAX_SIZE) {
+    public static Node createLeaf(Object[] values, int top,
+        int BUCKET_MAX_SIZE) {
       return new Node(values, top, true, BUCKET_MAX_SIZE);
     }
 
-    public static Node createNode(Object[] links, int top, int BUCKET_MAX_SIZE) {
+    public static Node createNode(Object[] links, int top,
+        int BUCKET_MAX_SIZE) {
       return new Node(links, top, false, BUCKET_MAX_SIZE);
     }
 
@@ -180,7 +182,8 @@ public class BTree<T extends Comparable<? super T>> implements
 
   @Override
   public Iterator<T> iterator() {
-    T[] arr = (T[])Array.newInstance(this.root.pivots[0].getClass(), this.size);
+    T[] arr = (T[]) Array
+        .newInstance(this.root.pivots[0].getClass(), this.size);
     fillArray(arr, 0, this.root);
     return new Iterator<>(arr);
   }
@@ -309,7 +312,8 @@ public class BTree<T extends Comparable<? super T>> implements
       leafFoundIndex++;
     }
 
-    this.insertInArray(currentNode.pivots, value, leafFoundIndex, currentNode.top);
+    this.insertInArray(currentNode.pivots, value, leafFoundIndex,
+        currentNode.top);
     currentNode.top++;
 
     if (currentNode.top > BUCKET_MAX_SIZE) {
@@ -327,9 +331,11 @@ public class BTree<T extends Comparable<? super T>> implements
 
     while (!stack.isEmpty() && insertedOnCurrentLevel != null) {
       rollUpNode = stack.pollLast();
-      @SuppressWarnings("ConstantConditions") int rollUpNodeIndex = stackInd.pollLast();
+      @SuppressWarnings("ConstantConditions") int rollUpNodeIndex = stackInd
+          .pollLast();
 
-      this.insertInArray(rollUpNode.links, insertedOnCurrentLevel, rollUpNodeIndex + 1,
+      this.insertInArray(rollUpNode.links, insertedOnCurrentLevel,
+          rollUpNodeIndex + 1,
           rollUpNode.top);
       this.insertInArray(rollUpNode.pivots, insertedOnCurrentLevel.pivots[0],
           rollUpNodeIndex + 1, rollUpNode.top);
@@ -400,69 +406,108 @@ public class BTree<T extends Comparable<? super T>> implements
 
   private void rollUpMergingSparseNodes(LinkedList<Node> visitedStack,
       LinkedList<Integer> visitedIndicesStack) {
+
     Node rollUpNode;
     while (!visitedStack.isEmpty()) {
       rollUpNode = visitedStack.pollLast();
-      @SuppressWarnings("ConstantConditions") int ind = visitedIndicesStack.pollLast();
+      @SuppressWarnings("ConstantConditions") int ind = visitedIndicesStack
+          .pollLast();
 
-      rollUpNode.pivots[ind] = ((Node)rollUpNode.links[ind]).pivots[0];
+      rollUpNode.pivots[ind] = ((Node) rollUpNode.links[ind]).pivots[0];
 
       if (ind >= 1
-          && ((Node)rollUpNode.links[ind - 1]).top + ((Node)rollUpNode.links[ind]).top
+          && ((Node) rollUpNode.links[ind - 1]).top
+          + ((Node) rollUpNode.links[ind]).top
           < BUCKET_MAX_SIZE / 2) {
-        if (((Node)rollUpNode.links[ind]).isLeaf) {
-          Object[] mergedArr = new Object[BUCKET_MAX_SIZE + 1];
 
-          int ind2 = shrinkPivots(rollUpNode, ind, mergedArr);
-          insertMergeNode(rollUpNode, ind, mergedArr, ind2);
+        Object[] toBeFilled = new Object[BUCKET_MAX_SIZE + 1];
+        int newTop;
+        if (hasLeafs(rollUpNode)) {
+          newTop = concatAdjacentArrays(rollUpNode, ind, toBeFilled, true);
         } else {
-          Object[] mergedArr = new Object[BUCKET_MAX_SIZE + 1];
-          int ind2 = shrinkLinks(rollUpNode, ind, mergedArr);
-          insertMergeNode(rollUpNode, ind, mergedArr, ind2);
+          newTop = concatAdjacentArrays(rollUpNode, ind, toBeFilled, false);
         }
+        insertCompactingNode(rollUpNode, ind, toBeFilled, newTop);
       }
     }
   }
 
-  private int shrinkPivots(Node it, int ind, Object[] mergedArr) {
-    int ind2 = 0;
-    System.arraycopy(((Node)it.links[ind - 1]).pivots, 0, mergedArr, 0,
-        ((Node)it.links[ind - 1]).top);
-    ind2 += ((Node)it.links[ind - 1]).top;
-    System.arraycopy(((Node)it.links[ind]).pivots, 0, mergedArr, ind2,
-        ((Node)it.links[ind]).top);
-    ind2 += ((Node)it.links[ind]).top;
-    return ind2;
+  /** Tests if one level below are leafs
+   *
+   * @param evaluated node under question
+   * @return result
+   */
+  private boolean hasLeafs(Node evaluated) {
+    return ((Node) evaluated.links[0]).isLeaf;
   }
 
-  private int shrinkLinks(Node it, int ind, Object[] mergedArr) {
-    int ind2 = 0;
-    System.arraycopy(((Node)it.links[ind - 1]).links, 0, mergedArr, 0,
-        ((Node)it.links[ind - 1]).top);
-    ind2 += ((Node)it.links[ind - 1]).top;
-    System.arraycopy(((Node)it.links[ind]).links, 0, mergedArr, ind2,
-        ((Node)it.links[ind]).top);
-    ind2 += ((Node)it.links[ind]).top;
-    return ind2;
-  }
+  /** Compacts adjacent children of given node
+   *
+   * @param selected node whose children are being compacted
+   * @param forIndex (forIndex-1, forIndex) are merged
+   * @param toBeFilled new destination
+   * @param usePivots are pivots or links being compacted
+   * @return new Top
+   */
+  private int concatAdjacentArrays(Node selected, int forIndex,
+      Object[] toBeFilled, boolean usePivots) {
+    int mergedIndex = 0;
 
-  private void insertMergeNode(Node it, int ind, Object[] mergedArr,
-      int ind2) {
-    Node mergedN;
-    if (((Node)it.links[0]).isLeaf) {
-      mergedN = Node.createLeaf(mergedArr, ind2, this.BUCKET_MAX_SIZE);
+    int firstTop = ((Node) selected.links[forIndex - 1]).top;
+    int secondTop = ((Node) selected.links[forIndex]).top;
+
+    Object[] firstSource, secondSource;
+    if (usePivots) {
+      firstSource = ((Node) selected.links[forIndex - 1]).pivots;
+      secondSource = ((Node) selected.links[forIndex]).pivots;
     } else {
-      mergedN = Node.createNode(mergedArr, ind2, this.BUCKET_MAX_SIZE);
+      firstSource = ((Node) selected.links[forIndex - 1]).links;
+      secondSource = ((Node) selected.links[forIndex]).links;
     }
 
     System
-        .arraycopy(it.links, ind + 1, it.links, ind, it.top - 1 - ind);
-    System
-        .arraycopy(it.pivots, ind + 1, it.pivots, ind, it.top - 1 - ind);
-    it.top--;
-    it.links[ind - 1] = mergedN;
-    it.pivots[ind - 1] = mergedN.pivots[0];
+        .arraycopy(firstSource, 0, toBeFilled, 0, firstTop);
+    mergedIndex += firstTop;
+
+    System.arraycopy(secondSource, 0, toBeFilled, mergedIndex, secondTop);
+    mergedIndex += secondTop;
+
+    return mergedIndex;
   }
+
+
+  /** Deletes two sparse nodes and inserts compact one
+   *
+   * @param parent node that should contain compacting node
+   * @param forIndex (forIndex-1, forIndex) are compacted
+   * @param compactArray new array
+   * @param compactArrayTop new array top
+   */
+  private void insertCompactingNode(Node parent, int forIndex,
+      Object[] compactArray, int compactArrayTop) {
+
+    Node newCompactNode;
+    if (hasLeafs(parent)) {
+      newCompactNode = Node
+          .createLeaf(compactArray, compactArrayTop, this.BUCKET_MAX_SIZE + 1);
+    } else {
+      newCompactNode = Node
+          .createNode(compactArray, compactArrayTop, this.BUCKET_MAX_SIZE + 1);
+    }
+
+    //move elements [i+1..top] one hop left
+    System
+        .arraycopy(parent.links, forIndex + 1, parent.links, forIndex,
+            parent.top - 1 - forIndex);
+    System
+        .arraycopy(parent.pivots, forIndex + 1, parent.pivots, forIndex,
+            parent.top - 1 - forIndex);
+
+    parent.top--;
+    parent.links[forIndex - 1] = newCompactNode;
+    parent.pivots[forIndex - 1] = newCompactNode.pivots[0];
+  }
+
 
   /** Splits node's pivots in half and returns new node
    * with right half
@@ -471,7 +516,7 @@ public class BTree<T extends Comparable<? super T>> implements
    * @return new node to be inserted
    */
   private Node growPivots(Node it) {
-    Object[] rightArr =  new Object[BUCKET_MAX_SIZE + 1];
+    Object[] rightArr = new Object[BUCKET_MAX_SIZE + 1];
 
     System.arraycopy(it.pivots, it.top / 2, rightArr, 0,
         it.top - it.top / 2);
@@ -479,7 +524,8 @@ public class BTree<T extends Comparable<? super T>> implements
     int prevTop = it.top;
     it.top /= 2;
 
-    return Node.createLeaf(rightArr, prevTop - prevTop / 2, this.BUCKET_MAX_SIZE);
+    return Node
+        .createLeaf(rightArr, prevTop - prevTop / 2, this.BUCKET_MAX_SIZE);
   }
 
   /** Splits node's links in half and returns new node
@@ -497,7 +543,8 @@ public class BTree<T extends Comparable<? super T>> implements
     int prevTop = it.top;
     it.top /= 2;
 
-    return Node.createNode(rightArr, prevTop - prevTop / 2, this.BUCKET_MAX_SIZE);
+    return Node
+        .createNode(rightArr, prevTop - prevTop / 2, this.BUCKET_MAX_SIZE);
   }
 
   private <U> int fillArray(U[] arr, int ind, Node node) {
