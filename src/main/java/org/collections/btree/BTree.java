@@ -10,6 +10,17 @@ import java.util.LinkedList;
  * Sorted multiset implemented as tree with high branching factor.
  * Number of branches in nodes is configurable.
  *
+ * Each bucket holds sorted values and children are values nested between
+ * consecutive two values. So children of top level nodes form sorted ranges
+ * to which inserted | deleted values fall, all the way down to leaf where
+ * instead of ranges there are plain elements.
+ *
+ * Invariants:
+ *
+ * (1) forall i: node.pivots[i] <= node.pivots[i+1]
+ * (2) all nodes have at least one child
+ * (3) forall i: node.pivots[i] <= node.links[i].pivots[0..n] <= node.pivots.[i+1]
+ *
  * D - depth, B - branching factor
  * Insertion: O(D*B) ~ O(1)
  * Removal: O(D*B) ~ O(1)
@@ -293,13 +304,25 @@ public class BTree<T extends Comparable<? super T>> implements
     rollUpGrowingLinks(visitedStack, visitedIndicesStack, carry);
   }
 
-  private Node insertGrowLeavesAtBottom(T value, LinkedList<Node> stack,
-      LinkedList<Integer> stackInd, Node currentNode) {
+  /** Top down matching bucket is found by checking range [min(bi), min(bi+1)
+   * and then when procedure reaches the leaf value is inserted, optionally
+   * overflown node is split
+   *
+   * @param value to be inserted
+   * @param visitedStack matching buckets on each level
+   * @param visitedIndicesStack corresponding indices
+   * @param root top level bucket
+   * @return new node after split or null
+   */
+  private Node insertGrowLeavesAtBottom(T value, LinkedList<Node> visitedStack,
+      LinkedList<Integer> visitedIndicesStack, Node root) {
+
+    Node currentNode = root;
     while (!currentNode.isLeaf) {
       int foundIndex = this
           .searchNode(currentNode.pivots, value, currentNode.top - 1);
-      stack.offerLast(currentNode);
-      stackInd.offerLast(foundIndex);
+      visitedStack.offerLast(currentNode);
+      visitedIndicesStack.offerLast(foundIndex);
       currentNode = (Node) currentNode.links[foundIndex];
     }
 
@@ -323,15 +346,23 @@ public class BTree<T extends Comparable<? super T>> implements
     }
   }
 
-  private void rollUpGrowingLinks(LinkedList<Node> stack,
-      LinkedList<Integer> stackInd, Node insertedOnTheBottom) {
+  /** During insertion value has been added to particular leaf.
+   * If count > max branching factor node is split into two
+   * and right node is passed to upper level.
+   *
+   * @param visitedStack stack to be consumed on way up
+   * @param visitedIndicesStack corresponding indices
+   * @param insertedOnTheBottom node inserted on previous level
+   */
+  private void rollUpGrowingLinks(LinkedList<Node> visitedStack,
+      LinkedList<Integer> visitedIndicesStack, Node insertedOnTheBottom) {
 
     Node rollUpNode;
     Node insertedOnCurrentLevel = insertedOnTheBottom;
 
-    while (!stack.isEmpty() && insertedOnCurrentLevel != null) {
-      rollUpNode = stack.pollLast();
-      @SuppressWarnings("ConstantConditions") int rollUpNodeIndex = stackInd
+    while (!visitedStack.isEmpty() && insertedOnCurrentLevel != null) {
+      rollUpNode = visitedStack.pollLast();
+      @SuppressWarnings("ConstantConditions") int rollUpNodeIndex = visitedIndicesStack
           .pollLast();
 
       this.insertInArray(rollUpNode.links, insertedOnCurrentLevel,
@@ -369,10 +400,21 @@ public class BTree<T extends Comparable<? super T>> implements
     return found;
   }
 
-  private boolean drillDownDeleteFromLeaf(T value, Node currentNode,
+  /** If value belongs to bucket i, value < min(bucket i+1)
+   * checking this procedure drills down to leaf and value
+   * is deleted if present.
+   *
+   * @param value value to be deleted
+   * @param root top level node
+   * @param visitedStack stack filled by node on each level down
+   * @param visitedIndicesStack corresponding indices
+   * @return isDeleted
+   */
+  private boolean drillDownDeleteFromLeaf(T value, Node root,
       LinkedList<Node> visitedStack,
       LinkedList<Integer> visitedIndicesStack) {
 
+    Node currentNode = root;
     while (!currentNode.isLeaf) {
       int foundAtIndex = this
           .searchNode(currentNode.pivots, value, currentNode.top - 1);
@@ -406,6 +448,14 @@ public class BTree<T extends Comparable<? super T>> implements
     }
   }
 
+  /** Deleting elements makes the node children sparse.
+   * If two adjacent children are less than half of max branching
+   * factor they are compacted to single node, and procedure
+   * repeats on higher level.
+   *
+   * @param visitedStack nodes visited during delete
+   * @param visitedIndicesStack corresponding indices
+   */
   private void rollUpMergingSparseNodes(LinkedList<Node> visitedStack,
       LinkedList<Integer> visitedIndicesStack) {
 
@@ -511,7 +561,6 @@ public class BTree<T extends Comparable<? super T>> implements
   }
 
 
-
   /** Splits node's pivots | links in half and returns new node
    * with right half
    *
@@ -535,8 +584,10 @@ public class BTree<T extends Comparable<? super T>> implements
     it.top /= 2;
 
     return usePivots ?
-        Node.createLeaf(expandedArray, prevTop - prevTop / 2, this.BUCKET_MAX_SIZE)
-        : Node.createNode(expandedArray, prevTop - prevTop / 2, this.BUCKET_MAX_SIZE);
+        Node.createLeaf(expandedArray, prevTop - prevTop / 2,
+            this.BUCKET_MAX_SIZE)
+        : Node.createNode(expandedArray, prevTop - prevTop / 2,
+            this.BUCKET_MAX_SIZE);
   }
 
   private <U> int fillArray(U[] arr, int ind, Node node) {
