@@ -180,7 +180,7 @@ public class BTree<T extends Comparable<? super T>> implements
 
   @Override
   public Iterator<T> iterator() {
-    T[] arr = (T[]) createArray(this.size, this.root.pivots[0].getClass());
+    T[] arr = (T[])Array.newInstance(this.root.pivots[0].getClass(), this.size);
     fillArray(arr, 0, this.root);
     return new Iterator<>(arr);
   }
@@ -309,7 +309,7 @@ public class BTree<T extends Comparable<? super T>> implements
       leafFoundIndex++;
     }
 
-    this.fillIn(currentNode.pivots, value, leafFoundIndex, currentNode.top);
+    this.insertInArray(currentNode.pivots, value, leafFoundIndex, currentNode.top);
     currentNode.top++;
 
     if (currentNode.top > BUCKET_MAX_SIZE) {
@@ -329,9 +329,9 @@ public class BTree<T extends Comparable<? super T>> implements
       rollUpNode = stack.pollLast();
       @SuppressWarnings("ConstantConditions") int rollUpNodeIndex = stackInd.pollLast();
 
-      this.fillIn(rollUpNode.links, insertedOnCurrentLevel, rollUpNodeIndex + 1,
+      this.insertInArray(rollUpNode.links, insertedOnCurrentLevel, rollUpNodeIndex + 1,
           rollUpNode.top);
-      this.fillIn(rollUpNode.pivots, insertedOnCurrentLevel.pivots[0],
+      this.insertInArray(rollUpNode.pivots, insertedOnCurrentLevel.pivots[0],
           rollUpNodeIndex + 1, rollUpNode.top);
 
       rollUpNode.top++;
@@ -500,10 +500,6 @@ public class BTree<T extends Comparable<? super T>> implements
     return Node.createNode(rightArr, prevTop - prevTop / 2, this.BUCKET_MAX_SIZE);
   }
 
-  private <U> U[] createArray(int size, Class<U> cls) {
-    return (U[]) Array.newInstance(cls, size);
-  }
-
   private <U> int fillArray(U[] arr, int ind, Node node) {
     for (int i = 0; i < node.top; i++) {
       if (node.isLeaf) {
@@ -515,7 +511,7 @@ public class BTree<T extends Comparable<? super T>> implements
     return ind;
   }
 
-  private <U> void fillIn(U[] arr, U value, int ind, int top) {
+  private <U> void insertInArray(U[] arr, U value, int ind, int top) {
     if (top - ind > 0) {
       System.arraycopy(arr, ind, arr, ind + 1, top - ind);
     }
@@ -562,7 +558,7 @@ public class BTree<T extends Comparable<? super T>> implements
         offset <<= 1;
       } else {
         checkpoint = nextCheckpoint;
-        offset = 1;
+        offset >>= 1;
       }
       if (checkpoint == nextCheckpoint) {
         return checkpoint;
@@ -607,7 +603,7 @@ public class BTree<T extends Comparable<? super T>> implements
         offset <<= 1;
       } else {
         checkpoint = nextCheckpoint;
-        offset = 1;
+        offset >>= 1;
       }
       if (checkpoint == nextCheckpoint) {
         return checkpoint;
