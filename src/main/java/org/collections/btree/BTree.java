@@ -422,7 +422,7 @@ public class BTree<T extends Comparable<? super T>> implements
 
         Object[] toBeFilled = new Object[BUCKET_MAX_SIZE + 1];
         int newTop;
-        if (hasLeafs(rollUpNode)) {
+        if (hasLeaves(rollUpNode)) {
           newTop = concatAdjacentArrays(rollUpNode, ind, toBeFilled, true);
         } else {
           newTop = concatAdjacentArrays(rollUpNode, ind, toBeFilled, false);
@@ -432,12 +432,12 @@ public class BTree<T extends Comparable<? super T>> implements
     }
   }
 
-  /** Tests if one level below are leafs
+  /** Tests if one level below there are leaves
    *
    * @param evaluated node under question
    * @return result
    */
-  private boolean hasLeafs(Node evaluated) {
+  private boolean hasLeaves(Node evaluated) {
     return ((Node) evaluated.links[0]).isLeaf;
   }
 
@@ -451,7 +451,7 @@ public class BTree<T extends Comparable<? super T>> implements
    */
   private int concatAdjacentArrays(Node selected, int forIndex,
       Object[] toBeFilled, boolean usePivots) {
-    int mergedIndex = 0;
+    int filledInIndex = 0;
 
     int firstTop = ((Node) selected.links[forIndex - 1]).top;
     int secondTop = ((Node) selected.links[forIndex]).top;
@@ -467,12 +467,12 @@ public class BTree<T extends Comparable<? super T>> implements
 
     System
         .arraycopy(firstSource, 0, toBeFilled, 0, firstTop);
-    mergedIndex += firstTop;
+    filledInIndex += firstTop;
 
-    System.arraycopy(secondSource, 0, toBeFilled, mergedIndex, secondTop);
-    mergedIndex += secondTop;
+    System.arraycopy(secondSource, 0, toBeFilled, filledInIndex, secondTop);
+    filledInIndex += secondTop;
 
-    return mergedIndex;
+    return filledInIndex;
   }
 
 
@@ -487,12 +487,12 @@ public class BTree<T extends Comparable<? super T>> implements
       Object[] compactArray, int compactArrayTop) {
 
     Node newCompactNode;
-    if (hasLeafs(parent)) {
+    if (hasLeaves(parent)) {
       newCompactNode = Node
-          .createLeaf(compactArray, compactArrayTop, this.BUCKET_MAX_SIZE + 1);
+          .createLeaf(compactArray, compactArrayTop, this.BUCKET_MAX_SIZE);
     } else {
       newCompactNode = Node
-          .createNode(compactArray, compactArrayTop, this.BUCKET_MAX_SIZE + 1);
+          .createNode(compactArray, compactArrayTop, this.BUCKET_MAX_SIZE);
     }
 
     //move elements [i+1..top] one hop left
