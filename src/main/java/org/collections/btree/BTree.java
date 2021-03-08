@@ -317,7 +317,7 @@ public class BTree<T extends Comparable<? super T>> implements
     currentNode.top++;
 
     if (currentNode.top > BUCKET_MAX_SIZE) {
-      return growPivots(currentNode);
+      return expand(currentNode, true);
     } else {
       return null;
     }
@@ -341,7 +341,7 @@ public class BTree<T extends Comparable<? super T>> implements
 
       rollUpNode.top++;
       if (rollUpNode.top > BUCKET_MAX_SIZE) {
-        insertedOnCurrentLevel = growLinks(rollUpNode);
+        insertedOnCurrentLevel = expand(rollUpNode, false);
       } else {
         insertedOnCurrentLevel = null;
       }
@@ -511,42 +511,32 @@ public class BTree<T extends Comparable<? super T>> implements
   }
 
 
-  /** Splits node's pivots in half and returns new node
+
+  /** Splits node's pivots | links in half and returns new node
    * with right half
    *
    * @param it node under operations
+   * @param usePivots are pivots the subject of split
    * @return new node to be inserted
    */
-  private Node growPivots(Node it) {
-    Object[] rightArr = new Object[BUCKET_MAX_SIZE + 1];
+  private Node expand(Node it, boolean usePivots) {
+    Object[] expandedArray = new Object[BUCKET_MAX_SIZE + 1];
+    Object[] source;
+    if (usePivots) {
+      source = it.pivots;
+    } else {
+      source = it.links;
+    }
 
-    System.arraycopy(it.pivots, it.top / 2, rightArr, 0,
+    System.arraycopy(source, it.top / 2, expandedArray, 0,
         it.top - it.top / 2);
 
     int prevTop = it.top;
     it.top /= 2;
 
-    return Node
-        .createLeaf(rightArr, prevTop - prevTop / 2, this.BUCKET_MAX_SIZE);
-  }
-
-  /** Splits node's links in half and returns new node
-   * with right half
-   *
-   * @param it node under operations
-   * @return new node to be inserted
-   */
-  private Node growLinks(Node it) {
-    Object[] rightArr = new Object[BUCKET_MAX_SIZE + 1];
-
-    System.arraycopy(it.links, it.top / 2, rightArr, 0,
-        it.top - it.top / 2);
-
-    int prevTop = it.top;
-    it.top /= 2;
-
-    return Node
-        .createNode(rightArr, prevTop - prevTop / 2, this.BUCKET_MAX_SIZE);
+    return usePivots ?
+        Node.createLeaf(expandedArray, prevTop - prevTop / 2, this.BUCKET_MAX_SIZE)
+        : Node.createNode(expandedArray, prevTop - prevTop / 2, this.BUCKET_MAX_SIZE);
   }
 
   private <U> int fillArray(U[] arr, int ind, Node node) {
