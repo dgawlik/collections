@@ -13,7 +13,7 @@ class BTreePerformanceTest {
     var perf = new BTreePerformanceTest();
 //    perf.vs_treeset();
 //    perf.vs_timsort();
-    perf.vs_timsort_sorted();
+//    perf.vs_timsort_sorted();
   }
 
 
