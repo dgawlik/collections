@@ -287,13 +287,13 @@ public class BTree<T extends Comparable<? super T>> implements
     LinkedList<Integer> visitedIndicesStack = new LinkedList<>();
     Node drillDownNode = this.root;
 
-    Node carry = insertGrowLeafsAtBottom(value, visitedStack,
+    Node carry = insertGrowLeavesAtBottom(value, visitedStack,
         visitedIndicesStack, drillDownNode);
 
     rollUpGrowingLinks(visitedStack, visitedIndicesStack, carry);
   }
 
-  private Node insertGrowLeafsAtBottom(T value, LinkedList<Node> stack,
+  private Node insertGrowLeavesAtBottom(T value, LinkedList<Node> stack,
       LinkedList<Integer> stackInd, Node currentNode) {
     while (!currentNode.isLeaf) {
       int foundIndex = this
@@ -335,8 +335,7 @@ public class BTree<T extends Comparable<? super T>> implements
           .pollLast();
 
       this.insertInArray(rollUpNode.links, insertedOnCurrentLevel,
-          rollUpNodeIndex + 1,
-          rollUpNode.top);
+          rollUpNodeIndex + 1, rollUpNode.top);
       this.insertInArray(rollUpNode.pivots, insertedOnCurrentLevel.pivots[0],
           rollUpNodeIndex + 1, rollUpNode.top);
 
@@ -385,17 +384,20 @@ public class BTree<T extends Comparable<? super T>> implements
     int leafFoundAtIndex = this
         .searchLeaf(currentNode.pivots, value, currentNode.top - 1);
     if (leafFoundAtIndex > 0 &&
-        this.comparator.compare(value, (T) currentNode.pivots[leafFoundAtIndex])
-            < 0) {
+        this.comparator.compare(
+            value,
+            (T) currentNode.pivots[leafFoundAtIndex]) < 0) {
+
       leafFoundAtIndex--;
     }
 
-    if (this.comparator.compare(value, (T) currentNode.pivots[leafFoundAtIndex])
-        == 0) {
-      System
-          .arraycopy(currentNode.pivots, leafFoundAtIndex + 1,
-              currentNode.pivots, leafFoundAtIndex,
-              currentNode.top - 1 - leafFoundAtIndex);
+    if (this.comparator.compare(
+        value,
+        (T) currentNode.pivots[leafFoundAtIndex]) == 0) {
+
+      Object[] array = currentNode.pivots;
+      @SuppressWarnings("UnnecessaryLocalVariable") int i = leafFoundAtIndex;
+      System.arraycopy(array, i + 1, array, i, currentNode.top - 1 - i);
 
       currentNode.top--;
       return true;
