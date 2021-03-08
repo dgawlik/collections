@@ -290,7 +290,7 @@ public class BTree<T extends Comparable<? super T>> implements
     Node carry = insertGrowLeafsAtBottom(value, visitedStack,
         visitedIndicesStack, drillDownNode);
 
-    bubbleUpGrowLinks(visitedStack, visitedIndicesStack, carry);
+    rollUpGrowingLinks(visitedStack, visitedIndicesStack, carry);
   }
 
   private Node insertGrowLeafsAtBottom(T value, LinkedList<Node> stack,
@@ -323,7 +323,7 @@ public class BTree<T extends Comparable<? super T>> implements
     }
   }
 
-  private void bubbleUpGrowLinks(LinkedList<Node> stack,
+  private void rollUpGrowingLinks(LinkedList<Node> stack,
       LinkedList<Integer> stackInd, Node insertedOnTheBottom) {
 
     Node rollUpNode;
@@ -362,7 +362,7 @@ public class BTree<T extends Comparable<? super T>> implements
     LinkedList<Node> visitedStack = new LinkedList<>();
     LinkedList<Integer> visitedIndicesStack = new LinkedList<>();
 
-    boolean found = deleteFromLeaf(value, drillDownNode, visitedStack,
+    boolean found = drillDownDeleteFromLeaf(value, drillDownNode, visitedStack,
         visitedIndicesStack);
 
     rollUpMergingSparseNodes(visitedStack, visitedIndicesStack);
@@ -370,7 +370,7 @@ public class BTree<T extends Comparable<? super T>> implements
     return found;
   }
 
-  private boolean deleteFromLeaf(T value, Node currentNode,
+  private boolean drillDownDeleteFromLeaf(T value, Node currentNode,
       LinkedList<Node> visitedStack,
       LinkedList<Integer> visitedIndicesStack) {
 
