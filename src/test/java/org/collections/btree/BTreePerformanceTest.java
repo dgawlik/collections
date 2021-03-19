@@ -11,8 +11,8 @@ class BTreePerformanceTest {
 
   public static void main(String[] args) {
     var perf = new BTreePerformanceTest();
-    perf.vs_treeset();
-//    perf.vs_timsort();
+//    perf.vs_treeset();
+   perf.vs_timsort();
 //    perf.vs_timsort_sorted();
   }
 
