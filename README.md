@@ -63,7 +63,7 @@ Search | O(logN)
 
 ### Persistent Vector
 
-Immutable data structure that is more performance than
+Immutable data structure that is more performant than
 CopyOnWriteArray. It's very similar to BTree except that
 data is not sorted. Constant operations in table are in fact
 always limited by O(depth*branching factor).
