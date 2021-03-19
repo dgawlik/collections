@@ -1,7 +1,6 @@
 package org.collections.btree;
 
 import java.lang.reflect.Array;
-import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -9,13 +8,21 @@ import java.util.RandomAccess;
 
 
 /**
- * Mutable persistent vector implementation
+ * Immutable persistent vector implementation as BTree with
+ * configurable branching factor.
+ *
+ * Each add/remove/set operation creates new instance with
+ * only affected nodes cloned recursively.
+ *
+ * Amount of copying of elements is bounded by O(levels*bucket size).
  *
  * @param <T>
  */
+@SuppressWarnings({"unchecked", "ConstantConditions"})
 public class Vector<T> implements RandomAccess,
     Iterable<T> {
 
+  @SuppressWarnings("unchecked")
   private static class Iterator<T> implements java.util.Iterator<T> {
 
     private final Object[] arr;
@@ -37,14 +44,26 @@ public class Vector<T> implements RandomAccess,
     }
   }
 
+  /**
+   * Node of the BTree, can be either leaf with values or
+   * node with links to subtrees. The index is calculated
+   * by drilling down to leaf and subtracting cumulative
+   * subtrees counts.
+   */
   public static class Node implements Cloneable {
 
     boolean isLeaf;
 
+    //if leaf holds objects, else null
     Object[] values;
+
+    //if node holds references to subtrees
     Object[] links;
+
+    //if node holds counts of elements in respective subtrees
     Integer[] counts;
 
+    //upper limit of occupied space in the arrays
     int top;
 
     private Node() {
@@ -66,6 +85,11 @@ public class Vector<T> implements RandomAccess,
     }
 
 
+    /** Answers how what is aggregate number of elements
+     * in this node.
+     *
+     * @return total count
+     */
     public int getTotalCount() {
       if (this.isLeaf) {
         return this.top;
@@ -108,8 +132,9 @@ public class Vector<T> implements RandomAccess,
       return sb.toString();
     }
 
+    @SuppressWarnings("MethodDoesntCallSuperMethod")
     @Override
-    protected Object clone() {
+    public Object clone() {
       Node cloned = new Node();
       cloned.isLeaf = this.isLeaf;
       cloned.top = this.top;
@@ -128,7 +153,7 @@ public class Vector<T> implements RandomAccess,
 
   private Node root;
   private int size;
-  private int BUCKET_MAX_SIZE;
+  private final int BUCKET_MAX_SIZE;
 
   public Vector(int BUCKET_MAX_SIZE) {
     this.size = 0;
@@ -177,6 +202,12 @@ public class Vector<T> implements RandomAccess,
     return arr;
   }
 
+  /** Drill down to corresponding leaf, copy it insert to copy, and
+   * roll up copying affected nodes up to the root.
+   *
+   * @param value element to be added
+   * @return new vector
+   */
   public Vector<T> add(T value) {
     Vector<T> newVect = new Vector<>(this.BUCKET_MAX_SIZE);
 
@@ -190,6 +221,13 @@ public class Vector<T> implements RandomAccess,
     return newVect;
   }
 
+  /** Drill down to corresponding leaf, copy it and delete from copy,
+   * and roll up to root copying affected nodes. Return new vector
+   * with new copy of root.
+   *
+   * @param value value to be removed
+   * @return new vector
+   */
   public Vector<T> remove(Object value) {
     Vector<T> newVect = new Vector<>(this.BUCKET_MAX_SIZE);
     if (this.size == 0 || !this.contains(value)) {
@@ -232,12 +270,21 @@ public class Vector<T> implements RandomAccess,
     return cursor;
   }
 
+  /** Find corresponding leaf and get element at reduced index.
+   *
+   * @param index position of retrieved element
+   * @return new vector
+   */
   public T get(int index) {
     if (index < 0 || index >= this.size) {
       throw new IndexOutOfBoundsException("index out of bounds");
     }
 
     Node drillDownNode = this.root;
+
+    //until leaf is found find index at current level
+    //with index corresponding to given subtree range
+    //and subtract from offset previous subtree aggregate counts
     while (!drillDownNode.isLeaf) {
       int offSum = 0;
       int i = 0;
@@ -254,6 +301,14 @@ public class Vector<T> implements RandomAccess,
     return (T) drillDownNode.values[index];
   }
 
+  /** Drill down to corresponding leaf noting visited nodes
+   * and their indices. Change element at leaf and copy
+   * affected nodes up to the root.
+   *
+   * @param index position of element
+   * @param element new value of element
+   * @return new vector
+   */
   public Vector<T> set(int index, T element) {
     if (index < 0 || index > this.size) {
       throw new IndexOutOfBoundsException("index out of bounds");
@@ -337,11 +392,30 @@ public class Vector<T> implements RandomAccess,
   }
 
 
+  /** Starting at root we cumulate counts at successive subtrees
+   * until we breach value of offset. Then we back up by one
+   * and subtract found sum from offset.
+   *
+   * Then at found index we drill down to given subtree and
+   * repeat same procedure until leaf is reached.
+   *
+   * When in leaf value is inserted at reduced offset, it is
+   * inserted to copy. If maximum capacity has been reached
+   * the leaf is split in two and right half carried to upper level.
+   *
+   * At upper node right half is inserted at corresponding position
+   * and node (as it is affected copied). Again if overflow splitting
+   * repeat until root is reached.
+   *
+   * @param value element to be inserted
+   * @param offset position to insert at
+   * @return new root
+   */
   private Node insertAt(T value, int offset) {
     LinkedList<Node> visitedStack = new LinkedList<>();
     LinkedList<Integer> visitedIndicesStack = new LinkedList<>();
     Node cursor = this.root;
-    Node lastCopied = null;
+    Node lastCopied;
 
     while (!cursor.isLeaf) {
       int cumulativeOffsets = 0;
@@ -405,6 +479,15 @@ public class Vector<T> implements RandomAccess,
   }
 
 
+  /** First drill down to leaf noting visited nodes and their indices.
+   * Then delete from copy and roll up popping values from stack. At
+   * each level if affected node and its neighbour are less than half
+   * of maximum capacity merge them in one node. Repeat procedure while
+   * copying affected nodes up to the root.
+   *
+   * @param offset position to remove
+   * @return new root
+   */
   private Node removeAt(int offset) {
     Node cursor = this.root;
     LinkedList<Node> visitedStack = new LinkedList<>();
@@ -493,7 +576,7 @@ public class Vector<T> implements RandomAccess,
   }
 
   private int shrinkLinks(Node nodeUnderOp, int indexUnderOp,
-      Object mergedArr) {
+      Object[] mergedArr) {
     int index = 0;
 
     System.arraycopy(
