@@ -1,5 +1,7 @@
 package org.collections.btree;
 
+import java.util.ArrayList;
+import java.util.Random;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -59,5 +61,37 @@ class VectorTest {
 
     Assertions.assertEquals(3, vect.get(0));
     Assertions.assertEquals(4, vect.get(1));
+  }
+
+  @Test
+  public void chaos_test(){
+    Vector<Integer> vect = new Vector<>(8);
+    ArrayList<Integer> ref = new ArrayList<>();
+    Random rnd = new Random(0);
+
+    for(int i=0;i<100;i++){
+      var r = rnd.nextInt(1000);
+      vect = vect.add(r);
+      ref.add(r);
+    }
+
+    for(int i=0;i<100;i++){
+      var index = rnd.nextInt(100);
+      var r = rnd.nextInt(1000);
+
+      vect = vect.add(index, r);
+      ref.add(index, r);
+    }
+
+    for(int i=0;i<100;i++){
+      var index = rnd.nextInt(ref.size());
+      vect = vect.removeAtIndex(index);
+      ref.remove(index);
+    }
+
+    Integer[] expected = ref.toArray(new Integer[0]);
+    Integer[] vectArr = vect.toArray(new Integer[0]);
+
+    Assertions.assertArrayEquals(expected, vectArr);
   }
 }

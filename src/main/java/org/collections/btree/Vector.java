@@ -1,6 +1,7 @@
 package org.collections.btree;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -12,15 +13,15 @@ import java.util.RandomAccess;
  *
  * @param <T>
  */
-public class Vector<T extends Comparable<? super T>> implements RandomAccess,
+public class Vector<T> implements RandomAccess,
     Iterable<T> {
 
   private static class Iterator<T> implements java.util.Iterator<T> {
 
-    private final T[] arr;
+    private final Object[] arr;
     private int top;
 
-    public Iterator(T[] arr) {
+    public Iterator(Object[] arr) {
       this.arr = arr;
       this.top = 0;
     }
@@ -32,7 +33,7 @@ public class Vector<T extends Comparable<? super T>> implements RandomAccess,
 
     @Override
     public T next() {
-      return this.arr[this.top++];
+      return (T) this.arr[this.top++];
     }
   }
 
@@ -153,15 +154,19 @@ public class Vector<T extends Comparable<? super T>> implements RandomAccess,
 
 
   public Iterator<T> iterator() {
-    T[] arr = (T[]) Array
-        .newInstance(this.getClass().getComponentType(), this.size);
-    fillArray(arr, 0, this.root);
+    Object[] arr = new Object[this.size];
+
+    if (this.size > 0) {
+      fillArray(arr, 0, this.root);
+    }
     return new Iterator<>(arr);
   }
 
   public Object[] toArray() {
     Object[] arr = new Object[this.size];
-    fillArray(arr, 0, this.root);
+    if (this.size > 0) {
+      fillArray(arr, 0, this.root);
+    }
     return arr;
   }
 
@@ -189,7 +194,7 @@ public class Vector<T extends Comparable<? super T>> implements RandomAccess,
     Vector<T> newVect = new Vector<>(this.BUCKET_MAX_SIZE);
     if (this.size == 0 || !this.contains(value)) {
       for (T elem : this) {
-        newVect.add(elem);
+        newVect = newVect.add(elem);
       }
       return newVect;
     }

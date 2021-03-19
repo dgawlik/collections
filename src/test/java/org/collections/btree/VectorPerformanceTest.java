@@ -1,9 +1,5 @@
 package org.collections.btree;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.ArrayList;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
@@ -14,15 +10,15 @@ class VectorPerformanceTest {
   @Test
   public void append() {
     final ArrayList<Integer> arr = new ArrayList<>();
-    final Vector<Integer> vct = new Vector<>(255);
     measure(() -> {
       for (int i = 0; i < 1_000_000; i++) {
         arr.add(i);
       }
       return null;
     }, () -> {
+      Vector<Integer> vct = new Vector<>(255);
       for (int i = 0; i < 1_000_000; i++) {
-        vct.add(i);
+        vct = vct.add(i);
       }
       return null;
     }, "ArrayList", "Vector");
@@ -31,15 +27,15 @@ class VectorPerformanceTest {
   @Test
   public void insert_in_the_middle() {
     final ArrayList<Integer> arr = new ArrayList<>();
-    final Vector<Integer> vct = new Vector<>(255);
     measure(() -> {
       for (int i = 0; i < 1_00_000; i++) {
         arr.add(i / 2, i);
       }
       return null;
     }, () -> {
+      Vector<Integer> vct = new Vector<>(255);
       for (int i = 0; i < 1_00_000; i++) {
-        vct.add(i / 2, i);
+        vct = vct.add(i / 2, i);
       }
       return null;
     }, "ArrayList", "Vector");
@@ -48,21 +44,23 @@ class VectorPerformanceTest {
   @Test
   public void pop_first() {
     final ArrayList<Integer> arr = new ArrayList<>();
-    final Vector<Integer> vct = new Vector<>(255);
+    Vector<Integer> vct = new Vector<>(255);
 
-    for (int i = 0; i < 1_00_000; i++) {
+    for (int i = 0; i < 1_000; i++) {
       arr.add(i);
-      vct.add(i);
+      vct = vct.add(i);
     }
 
+    final Vector<Integer> vct3 = vct;
     measure(() -> {
-      for(int i=0;i< 1_00_000;i++){
+      for(int i=0;i< 1_000;i++){
         arr.remove(0);
       }
       return null;
     }, () -> {
-      for(int i=0;i< 1_00_000;i++){
-        vct.remove(0);
+      Vector<Integer> vct2 = vct3;
+      for(int i=0;i< 1_000;i++){
+        vct2 = vct2.remove(0);
       }
       return null;
     }, "ArrayList", "Vector");
@@ -71,21 +69,23 @@ class VectorPerformanceTest {
   @Test
   public void index_of() {
     final ArrayList<Integer> arr = new ArrayList<>();
-    final Vector<Integer> vct = new Vector<>(255);
+    Vector<Integer> vct = new Vector<>(255);
 
     for (int i = 0; i < 1_00_000; i++) {
       arr.add(i);
-      vct.add(i);
+      vct = vct.add(i);
     }
 
+    final Vector<Integer> vct3 = vct;
     measure(() -> {
       for(int i=0;i< 1_000;i++){
         arr.indexOf(arr.get(arr.size()-1));
       }
       return null;
     }, () -> {
+      Vector<Integer> vct2 = vct3;
       for(int i=0;i< 1_000;i++){
-       vct.indexOf(vct.get(vct.size()-1));
+       vct2.indexOf(vct2.get(vct2.size()-1));
       }
       return null;
     }, "ArrayList", "Vector");
@@ -94,21 +94,23 @@ class VectorPerformanceTest {
   @Test
   public void get_set() {
     final ArrayList<Integer> arr = new ArrayList<>();
-    final Vector<Integer> vct = new Vector<>(255);
+    Vector<Integer> vct = new Vector<>(255);
 
     for (int i = 0; i < 1_000_000; i++) {
       arr.add(i);
-      vct.add(i);
+      vct = vct.add(i);
     }
 
+    Vector<Integer> vct3 = vct;
     measure(() -> {
       for(int i=0;i< 1_000_000;i++){
         arr.set(i/2, arr.get(i/2)+1);
       }
       return null;
     }, () -> {
+      Vector<Integer> vct2 = vct3;
       for(int i=0;i< 1_000_000;i++){
-        vct.set(i/2, vct.get(i/2)+1);
+        vct2 = vct2.set(i/2, vct2.get(i/2)+1);
       }
       return null;
     }, "ArrayList", "Vector");
