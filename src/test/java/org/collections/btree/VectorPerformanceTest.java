@@ -8,13 +8,13 @@ import java.util.ArrayList;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 
-class BTreeArrayPerformanceTest {
+class VectorPerformanceTest {
 
 
   @Test
   public void append() {
     final ArrayList<Integer> arr = new ArrayList<>();
-    final BTreeArray<Integer> vct = new BTreeArray<>(255);
+    final Vector<Integer> vct = new Vector<>(255);
     measure(() -> {
       for (int i = 0; i < 1_000_000; i++) {
         arr.add(i);
@@ -31,7 +31,7 @@ class BTreeArrayPerformanceTest {
   @Test
   public void insert_in_the_middle() {
     final ArrayList<Integer> arr = new ArrayList<>();
-    final BTreeArray<Integer> vct = new BTreeArray<>(255);
+    final Vector<Integer> vct = new Vector<>(255);
     measure(() -> {
       for (int i = 0; i < 1_00_000; i++) {
         arr.add(i / 2, i);
@@ -48,7 +48,7 @@ class BTreeArrayPerformanceTest {
   @Test
   public void pop_first() {
     final ArrayList<Integer> arr = new ArrayList<>();
-    final BTreeArray<Integer> vct = new BTreeArray<>(255);
+    final Vector<Integer> vct = new Vector<>(255);
 
     for (int i = 0; i < 1_00_000; i++) {
       arr.add(i);
@@ -71,7 +71,7 @@ class BTreeArrayPerformanceTest {
   @Test
   public void index_of() {
     final ArrayList<Integer> arr = new ArrayList<>();
-    final BTreeArray<Integer> vct = new BTreeArray<>(255);
+    final Vector<Integer> vct = new Vector<>(255);
 
     for (int i = 0; i < 1_00_000; i++) {
       arr.add(i);
@@ -94,7 +94,7 @@ class BTreeArrayPerformanceTest {
   @Test
   public void get_set() {
     final ArrayList<Integer> arr = new ArrayList<>();
-    final BTreeArray<Integer> vct = new BTreeArray<>(255);
+    final Vector<Integer> vct = new Vector<>(255);
 
     for (int i = 0; i < 1_000_000; i++) {
       arr.add(i);
