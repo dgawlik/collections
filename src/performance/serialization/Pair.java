@@ -1,4 +1,4 @@
-package org.collections.serialization;
+package serialization;
 
 
 import java.io.Serializable;

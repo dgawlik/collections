@@ -1,8 +1,7 @@
-package org.collections.btree;
-
 import java.util.Arrays;
 import java.util.Random;
 import java.util.TreeSet;
+import org.collections.btree.BTree;
 
 class BTreePerformanceTest {
 

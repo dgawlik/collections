@@ -16,9 +16,26 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
 }
 
+sourceSets {
+    performance {
+        java {
+            srcDirs = ['src/performance']
+            compileClasspath += main.output
+            runtimeClasspath += main.output
+        }
+    }
+}
+
 test {
     useJUnitPlatform()
 }
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
+    }
+}
+test.finalizedBy jacocoTestReport
 
 sonarqube {
     properties {

@@ -1,23 +1,25 @@
-package org.collections.skip;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.TreeSet;
-import org.junit.jupiter.api.Test;
+import org.collections.skip.SkipList;
 
 public class SkipListPerformanceTest {
 
-  private final Random rnd = new Random(1);
+  private static final Random rnd = new Random(1);
 
-  @Test
-  public void testAddition() {
+  public static void main(String[] args) {
+    //SkipListPerformanceTest.testAddition();
+    SkipListPerformanceTest.testRemoval();
+  }
+
+  public static void testAddition() {
     TreeSet<Integer> treeSet = new TreeSet<>();
     SkipList<Integer> skipList = new SkipList<>();
 
     List<Integer> elements = new ArrayList<>();
     for (int i = 0; i < 1_000_000; i++) {
-      elements.add(this.rnd.nextInt());
+      elements.add(rnd.nextInt());
     }
 
     var tsStart = System.currentTimeMillis();
@@ -37,14 +39,13 @@ public class SkipListPerformanceTest {
             - slStart) + "ms");
   }
 
-  @Test
-  public void testRemoval() {
+  public static void testRemoval() {
     TreeSet<Integer> treeSet = new TreeSet<>();
     SkipList<Integer> skipList = new SkipList<>();
 
     List<Integer> elements = new ArrayList<>();
     for (int i = 0; i < 1_000_000; i++) {
-      elements.add(this.rnd.nextInt());
+      elements.add(rnd.nextInt());
       treeSet.add(elements.get(i));
       skipList.add(elements.get(i));
     }
