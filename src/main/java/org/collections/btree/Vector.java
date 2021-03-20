@@ -57,7 +57,7 @@ public class Vector<T> implements RandomAccess,
    * by drilling down to leaf and subtracting cumulative
    * subtrees counts.
    */
-  public static class Node implements Cloneable {
+  public static class Node {
 
     boolean isLeaf;
 
@@ -158,11 +158,11 @@ public class Vector<T> implements RandomAccess,
 
   private Node root;
   private int size;
-  private final int BUCKET_MAX_SIZE;
+  private final int bucketMaxSize;
 
   public Vector(int bucketMaxSize) {
     this.size = 0;
-    this.BUCKET_MAX_SIZE = bucketMaxSize;
+    this.bucketMaxSize = bucketMaxSize;
   }
 
 
@@ -214,10 +214,10 @@ public class Vector<T> implements RandomAccess,
    * @return new vector
    */
   public Vector<T> add(T value) {
-    Vector<T> newVect = new Vector<>(this.BUCKET_MAX_SIZE);
+    Vector<T> newVect = new Vector<>(this.bucketMaxSize);
 
     if (this.root == null) {
-      newVect.root = Node.singleton(value, this.BUCKET_MAX_SIZE);
+      newVect.root = Node.singleton(value, this.bucketMaxSize);
       newVect.size = 1;
     } else {
       newVect.root = this.insertAt(value, this.size);
@@ -238,7 +238,7 @@ public class Vector<T> implements RandomAccess,
       return this;
     }
 
-    Vector<T> newVect = new Vector<>(this.BUCKET_MAX_SIZE);
+    Vector<T> newVect = new Vector<>(this.bucketMaxSize);
     int offset = this.findIndex(value, this.root, 0);
     newVect.root = this.removeAt(offset);
     newVect.size = this.size - 1;
@@ -268,7 +268,7 @@ public class Vector<T> implements RandomAccess,
   public Vector<T> removeAll(Collection<?> c) {
     Vector<T> cursor = this;
     for (Object o : c) {
-      cursor = this.remove(o);
+      cursor = cursor.remove(o);
     }
     return cursor;
   }
@@ -345,7 +345,7 @@ public class Vector<T> implements RandomAccess,
       copiedLast = cloned;
     }
 
-    Vector<T> newVect = new Vector<>(this.BUCKET_MAX_SIZE);
+    Vector<T> newVect = new Vector<>(this.bucketMaxSize);
     newVect.root = copiedLast;
     newVect.size = this.size;
     return newVect;
@@ -359,9 +359,9 @@ public class Vector<T> implements RandomAccess,
       throw new IllegalArgumentException("Element is null");
     }
 
-    Vector<T> newVect = new Vector<>(this.BUCKET_MAX_SIZE);
+    Vector<T> newVect = new Vector<>(this.bucketMaxSize);
     if (this.root == null) {
-      newVect.root = Node.singleton(element, this.BUCKET_MAX_SIZE);
+      newVect.root = Node.singleton(element, this.bucketMaxSize);
       newVect.size = 1;
     } else {
       newVect.root = this.insertAt(element, index);
@@ -375,7 +375,7 @@ public class Vector<T> implements RandomAccess,
       throw new IndexOutOfBoundsException(INDEX_OUT_OF_BOUNDS_MESSAGE + index);
     }
 
-    Vector<T> newVect = new Vector<>(this.BUCKET_MAX_SIZE);
+    Vector<T> newVect = new Vector<>(this.bucketMaxSize);
 
     newVect.root = this.removeAt(index);
     newVect.size = this.size - 1;
@@ -443,7 +443,7 @@ public class Vector<T> implements RandomAccess,
     lastCopied.top++;
 
     Node carry = null;
-    if (lastCopied.top > this.BUCKET_MAX_SIZE) {
+    if (lastCopied.top > this.bucketMaxSize) {
       carry = this.expandLeafs(lastCopied);
     }
 
@@ -462,7 +462,7 @@ public class Vector<T> implements RandomAccess,
             copied.top);
         copied.top++;
 
-        if (copied.top > this.BUCKET_MAX_SIZE) {
+        if (copied.top > this.bucketMaxSize) {
           carry = expandLinks(copied);
         } else {
           carry = null;
@@ -472,7 +472,7 @@ public class Vector<T> implements RandomAccess,
     }
 
     if (carry != null) {
-      Object[] newLinks = new Object[BUCKET_MAX_SIZE + 1];
+      Object[] newLinks = new Object[bucketMaxSize + 1];
       newLinks[0] = lastCopied;
       newLinks[1] = carry;
       return Node.createNode(newLinks, 2);
@@ -535,9 +535,9 @@ public class Vector<T> implements RandomAccess,
       if (index >= 1
           && ((Node) cloned.links[index - 1]).top
           + ((Node) cloned.links[index]).top
-          <= this.BUCKET_MAX_SIZE / 2
+          <= this.bucketMaxSize / 2
       ) {
-        Object[] mergedArr = new Object[BUCKET_MAX_SIZE + 1];
+        Object[] mergedArr = new Object[bucketMaxSize + 1];
         int newTop;
         if (((Node) cloned.links[index]).isLeaf) {
           newTop = shrinkPivots(cloned, index, mergedArr);
@@ -624,7 +624,7 @@ public class Vector<T> implements RandomAccess,
   }
 
   private Node expandLeafs(Node toBeExpanded) {
-    Object[] newArray = new Object[BUCKET_MAX_SIZE + 1];
+    Object[] newArray = new Object[bucketMaxSize + 1];
 
     System.arraycopy(toBeExpanded.values, toBeExpanded.top / 2, newArray, 0,
         toBeExpanded.top - toBeExpanded.top / 2);
@@ -636,7 +636,7 @@ public class Vector<T> implements RandomAccess,
   }
 
   private Node expandLinks(Node toBeExpanded) {
-    Object[] newArray = new Object[BUCKET_MAX_SIZE + 1];
+    Object[] newArray = new Object[bucketMaxSize + 1];
 
     System.arraycopy(toBeExpanded.links, toBeExpanded.top / 2, newArray, 0,
         toBeExpanded.top - toBeExpanded.top / 2);

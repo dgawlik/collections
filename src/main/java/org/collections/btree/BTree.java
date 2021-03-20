@@ -93,19 +93,19 @@ public class BTree<T extends Comparable<T>> implements
     }
 
     public static Node createLeaf(Object[] values, int top,
-        int BUCKET_MAX_SIZE) {
-      return new Node(values, top, true, BUCKET_MAX_SIZE);
+        int bucketMaxSize) {
+      return new Node(values, top, true, bucketMaxSize);
     }
 
     public static Node createNode(Object[] links, int top,
-        int BUCKET_MAX_SIZE) {
-      return new Node(links, top, false, BUCKET_MAX_SIZE);
+        int bucketMaxSize) {
+      return new Node(links, top, false, bucketMaxSize);
     }
 
-    public static Node createSingleton(Object value, int BUCKET_MAX_SIZE) {
-      Object[] arr = new Object[BUCKET_MAX_SIZE + 1];
+    public static Node createSingleton(Object value, int bucketMaxSize) {
+      Object[] arr = new Object[bucketMaxSize + 1];
       arr[0] = value;
-      return new Node(arr, 1, true, BUCKET_MAX_SIZE);
+      return new Node(arr, 1, true, bucketMaxSize);
     }
 
     @Override
@@ -126,7 +126,7 @@ public class BTree<T extends Comparable<T>> implements
 
   private final Comparator<T> comparator;
 
-  private final int BUCKET_MAX_SIZE;
+  private final int bucketMaxSize;
 
   private Node root;
 
@@ -136,7 +136,7 @@ public class BTree<T extends Comparable<T>> implements
   public BTree(Comparator<T> comparator, int bucketMaxSize) {
     this.comparator = comparator;
     this.size = 0;
-    this.BUCKET_MAX_SIZE = bucketMaxSize;
+    this.bucketMaxSize = bucketMaxSize;
   }
 
   public BTree(int bucketMaxSize) {
@@ -221,7 +221,7 @@ public class BTree<T extends Comparable<T>> implements
   @Override
   public boolean add(T value) {
     if (this.root == null) {
-      this.root = Node.createSingleton(value, BUCKET_MAX_SIZE);
+      this.root = Node.createSingleton(value, bucketMaxSize);
     } else {
       this.insert(value);
     }
@@ -343,7 +343,7 @@ public class BTree<T extends Comparable<T>> implements
         currentNode.top);
     currentNode.top++;
 
-    if (currentNode.top > BUCKET_MAX_SIZE) {
+    if (currentNode.top > bucketMaxSize) {
       return expand(currentNode, true);
     } else {
       return null;
@@ -375,7 +375,7 @@ public class BTree<T extends Comparable<T>> implements
           rollUpNodeIndex + 1, rollUpNode.top);
 
       rollUpNode.top++;
-      if (rollUpNode.top > BUCKET_MAX_SIZE) {
+      if (rollUpNode.top > bucketMaxSize) {
         insertedOnCurrentLevel = expand(rollUpNode, false);
       } else {
         insertedOnCurrentLevel = null;
@@ -383,10 +383,10 @@ public class BTree<T extends Comparable<T>> implements
     }
 
     if (insertedOnCurrentLevel != null) {
-      Object[] newLinks = new Object[BUCKET_MAX_SIZE + 1];
+      Object[] newLinks = new Object[bucketMaxSize + 1];
       newLinks[0] = this.root;
       newLinks[1] = insertedOnCurrentLevel;
-      this.root = Node.createNode(newLinks, 2, this.BUCKET_MAX_SIZE);
+      this.root = Node.createNode(newLinks, 2, this.bucketMaxSize);
     }
   }
 
@@ -474,9 +474,9 @@ public class BTree<T extends Comparable<T>> implements
       if (ind >= 1
           && ((Node) rollUpNode.links[ind - 1]).top
           + ((Node) rollUpNode.links[ind]).top
-          < BUCKET_MAX_SIZE / 2) {
+          < bucketMaxSize / 2) {
 
-        Object[] toBeFilled = new Object[BUCKET_MAX_SIZE + 1];
+        Object[] toBeFilled = new Object[bucketMaxSize + 1];
         int newTop;
         if (hasLeaves(rollUpNode)) {
           newTop = concatAdjacentArrays(rollUpNode, ind, toBeFilled, true);
@@ -546,10 +546,10 @@ public class BTree<T extends Comparable<T>> implements
     Node newCompactNode;
     if (hasLeaves(parent)) {
       newCompactNode = Node
-          .createLeaf(compactArray, compactArrayTop, this.BUCKET_MAX_SIZE);
+          .createLeaf(compactArray, compactArrayTop, this.bucketMaxSize);
     } else {
       newCompactNode = Node
-          .createNode(compactArray, compactArrayTop, this.BUCKET_MAX_SIZE);
+          .createNode(compactArray, compactArrayTop, this.bucketMaxSize);
     }
 
     //move elements [i+1..top] one hop left
@@ -574,7 +574,7 @@ public class BTree<T extends Comparable<T>> implements
    * @return new node to be inserted
    */
   private Node expand(Node it, boolean usePivots) {
-    Object[] expandedArray = new Object[BUCKET_MAX_SIZE + 1];
+    Object[] expandedArray = new Object[bucketMaxSize + 1];
     Object[] source;
     if (usePivots) {
       source = it.pivots;
@@ -590,9 +590,9 @@ public class BTree<T extends Comparable<T>> implements
 
     return usePivots ?
         Node.createLeaf(expandedArray, prevTop - prevTop / 2,
-            this.BUCKET_MAX_SIZE)
+            this.bucketMaxSize)
         : Node.createNode(expandedArray, prevTop - prevTop / 2,
-            this.BUCKET_MAX_SIZE);
+            this.bucketMaxSize);
   }
 
   private <U> int fillArray(U[] arr, int ind, Node node) {

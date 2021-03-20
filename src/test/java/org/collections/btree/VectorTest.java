@@ -1,6 +1,7 @@
 package org.collections.btree;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -93,5 +94,38 @@ class VectorTest {
     Integer[] vectArr = vect.toArray(new Integer[0]);
 
     Assertions.assertArrayEquals(expected, vectArr);
+  }
+
+
+  @Test
+  public void test_iterator(){
+    var vect = new Vector<Integer>(4);
+
+    int[] ref = new int[20];
+    int index = 0;
+    for(int i=0;i<20;i++){
+      ref[index++] = i;
+      vect = vect.add(i);
+    }
+
+    int[] buf = new int[20];
+    index = 0;
+    for(int i : vect){
+      buf[index++] = i;
+    }
+
+    Assertions.assertArrayEquals(ref, buf);
+  }
+
+  @Test
+  public void contains_all(){
+    var vect = new Vector<Integer>(4);
+
+    vect = vect.addAll(List.of(1,2,3,4));
+    vect = vect.removeAll(List.of(1,2));
+
+    System.out.println(vect);
+    Assertions.assertTrue(vect.containsAll(List.of(3,4)));
+    Assertions.assertEquals(2, vect.size());
   }
 }

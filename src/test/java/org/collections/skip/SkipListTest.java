@@ -139,4 +139,40 @@ class SkipListTest {
     Assertions.assertArrayEquals(new Integer[]{1, 5},
         sklst.toArray(new Integer[0]));
   }
+
+  @Test
+  public void test_iterator() {
+    SkipList<Integer> lst = new SkipList<>();
+    lst.add(1);
+    lst.add(2);
+    lst.add(3);
+
+    int[] arr = new int[3];
+    int index = 0;
+    for (int i : lst) {
+      arr[index++] = i;
+    }
+
+    Assertions.assertArrayEquals(new int[]{1, 2, 3}, arr);
+  }
+
+  @Test
+  public void test_first(){
+    var lst = new SkipList<Integer>();
+
+    lst.add(1);
+    lst.add(2);
+
+    Assertions.assertEquals(1, lst.first());
+  }
+
+  @Test
+  public void test_last(){
+    var lst = new SkipList<Integer>();
+
+    lst.add(1);
+    lst.add(2);
+
+    Assertions.assertEquals(2, lst.last());
+  }
 }

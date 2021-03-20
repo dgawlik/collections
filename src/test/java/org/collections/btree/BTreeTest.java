@@ -3,8 +3,10 @@ package org.collections.btree;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 import java.util.TreeSet;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class BTreeTest {
@@ -34,7 +36,7 @@ class BTreeTest {
     }
 
     System.out.println(sut);
-    for (int i=0;i<12;i+=2) {
+    for (int i=0;i<8;i++) {
       reference.remove(i);
       sut.remove(i);
     }
@@ -89,5 +91,20 @@ class BTreeTest {
       arr[i] = this.rnd.nextInt(max);
     }
     return arr;
+  }
+
+  @Test
+  public void bulk_ops(){
+    var btree = new BTree<Integer>(4);
+
+    btree.addAll(List.of(1,2,3,4,5,6));
+    btree.removeAll(List.of(1,2));
+
+    Assertions.assertEquals(4, btree.size());
+    Assertions.assertTrue(btree.containsAll(List.of(3,4,5,6)));
+
+    btree.retainAll(List.of(3,4));
+    Assertions.assertEquals(2, btree.size());
+    Assertions.assertTrue(btree.containsAll(List.of(3,4)));
   }
 }
