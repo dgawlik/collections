@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 class VectorTest {
 
   @Test
-  public void insertion_test(){
+  void insertion_test(){
     Vector<Integer> vect = new Vector<>(4);
     vect = vect.add(1);
     vect = vect.add(2);
@@ -22,7 +22,7 @@ class VectorTest {
   }
 
   @Test
-  public void removal_test(){
+  void removal_test(){
     Vector<Integer> vect = new Vector<>(4);
     for(int i=0;i<5;i++){
       vect = vect.add(i);
@@ -39,7 +39,7 @@ class VectorTest {
   }
 
   @Test
-  public void immutable_test(){
+  void immutable_test(){
     Vector<Integer> vect = new Vector<>(4);
 
     vect = vect.add(1);
@@ -51,7 +51,7 @@ class VectorTest {
   }
 
   @Test
-  public void setter_test(){
+  void setter_test(){
     Vector<Integer> vect = new Vector<>(4);
     vect = vect.add(1);
     vect = vect.add(2);
@@ -64,7 +64,7 @@ class VectorTest {
   }
 
   @Test
-  public void chaos_test(){
+  void chaos_test(){
     Vector<Integer> vect = new Vector<>(8);
     ArrayList<Integer> ref = new ArrayList<>();
     Random rnd = new Random(0);

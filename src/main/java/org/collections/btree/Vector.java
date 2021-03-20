@@ -4,6 +4,7 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.NoSuchElementException;
 import java.util.RandomAccess;
 
 
@@ -21,6 +22,8 @@ import java.util.RandomAccess;
 @SuppressWarnings({"unchecked", "ConstantConditions"})
 public class Vector<T> implements RandomAccess,
     Iterable<T> {
+
+  public static final String INDEX_OUT_OF_BOUNDS_MESSAGE = "Index out of bounds: ";
 
   @SuppressWarnings("unchecked")
   private static class Iterator<T> implements java.util.Iterator<T> {
@@ -40,6 +43,10 @@ public class Vector<T> implements RandomAccess,
 
     @Override
     public T next() {
+      if (this.top >= this.arr.length) {
+        throw new NoSuchElementException("Iterator reached the end.");
+      }
+
       return (T) this.arr[this.top++];
     }
   }
@@ -102,8 +109,8 @@ public class Vector<T> implements RandomAccess,
       }
     }
 
-    public static <U> Node singleton(U value, int BUCKET_MAX_SIZE) {
-      Object[] arr = new Object[BUCKET_MAX_SIZE + 1];
+    public static <U> Node singleton(U value, int bucketMaxSize) {
+      Object[] arr = new Object[bucketMaxSize + 1];
       arr[0] = value;
       return new Node(arr, 1, true);
     }
@@ -132,20 +139,18 @@ public class Vector<T> implements RandomAccess,
       return sb.toString();
     }
 
-    @SuppressWarnings("MethodDoesntCallSuperMethod")
-    @Override
-    public Object clone() {
+    public static Node copy(Node node) {
       Node cloned = new Node();
-      cloned.isLeaf = this.isLeaf;
-      cloned.top = this.top;
-      if (this.counts != null) {
-        cloned.counts = Arrays.copyOf(this.counts, this.counts.length);
+      cloned.isLeaf = node.isLeaf;
+      cloned.top = node.top;
+      if (node.counts != null) {
+        cloned.counts = Arrays.copyOf(node.counts, node.counts.length);
       }
-      if (this.links != null) {
-        cloned.links = Arrays.copyOf(this.links, this.links.length);
+      if (node.links != null) {
+        cloned.links = Arrays.copyOf(node.links, node.links.length);
       }
-      if (this.values != null) {
-        cloned.values = Arrays.copyOf(this.values, this.values.length);
+      if (node.values != null) {
+        cloned.values = Arrays.copyOf(node.values, node.values.length);
       }
       return cloned;
     }
@@ -155,9 +160,9 @@ public class Vector<T> implements RandomAccess,
   private int size;
   private final int BUCKET_MAX_SIZE;
 
-  public Vector(int BUCKET_MAX_SIZE) {
+  public Vector(int bucketMaxSize) {
     this.size = 0;
-    this.BUCKET_MAX_SIZE = BUCKET_MAX_SIZE;
+    this.BUCKET_MAX_SIZE = bucketMaxSize;
   }
 
 
@@ -234,7 +239,7 @@ public class Vector<T> implements RandomAccess,
     }
 
     Vector<T> newVect = new Vector<>(this.BUCKET_MAX_SIZE);
-    int offset = this.findIndex((T) value, this.root, 0);
+    int offset = this.findIndex(value, this.root, 0);
     newVect.root = this.removeAt(offset);
     newVect.size = this.size - 1;
     if (newVect.size == 0) {
@@ -275,7 +280,7 @@ public class Vector<T> implements RandomAccess,
    */
   public T get(int index) {
     if (index < 0 || index >= this.size) {
-      throw new IndexOutOfBoundsException("index out of bounds");
+      throw new IndexOutOfBoundsException(INDEX_OUT_OF_BOUNDS_MESSAGE + index);
     }
 
     Node drillDownNode = this.root;
@@ -309,7 +314,7 @@ public class Vector<T> implements RandomAccess,
    */
   public Vector<T> set(int index, T element) {
     if (index < 0 || index > this.size) {
-      throw new IndexOutOfBoundsException("index out of bounds");
+      throw new IndexOutOfBoundsException(INDEX_OUT_OF_BOUNDS_MESSAGE + index);
     }
     Node drillDownNode = this.root;
     LinkedList<Node> visitedStack = new LinkedList<>();
@@ -330,17 +335,17 @@ public class Vector<T> implements RandomAccess,
       drillDownNode = (Node) drillDownNode.links[i];
       index -= offSum;
     }
-    copiedLast = (Node) drillDownNode.clone();
+    copiedLast = Node.copy(drillDownNode);
     copiedLast.values[index] = element;
 
     while (!visitedStack.isEmpty()) {
-      Node cloned = (Node) visitedStack.pollLast().clone();
+      Node cloned = Node.copy(visitedStack.pollLast());
       Integer upIndex = visitedIndicesStack.pollLast();
       cloned.links[upIndex] = copiedLast;
       copiedLast = cloned;
     }
 
-    Vector<T> newVect = new Vector<>(BUCKET_MAX_SIZE);
+    Vector<T> newVect = new Vector<>(this.BUCKET_MAX_SIZE);
     newVect.root = copiedLast;
     newVect.size = this.size;
     return newVect;
@@ -348,10 +353,10 @@ public class Vector<T> implements RandomAccess,
 
   public Vector<T> add(int index, T element) {
     if (index < 0 || index > this.size) {
-      throw new IndexOutOfBoundsException("index out of bounds");
+      throw new IndexOutOfBoundsException(INDEX_OUT_OF_BOUNDS_MESSAGE + index);
     }
     if (element == null) {
-      throw new IllegalArgumentException("element is null");
+      throw new IllegalArgumentException("Element is null");
     }
 
     Vector<T> newVect = new Vector<>(this.BUCKET_MAX_SIZE);
@@ -367,7 +372,7 @@ public class Vector<T> implements RandomAccess,
 
   public Vector<T> removeAtIndex(int index) {
     if (index < 0 || index >= this.size) {
-      throw new IndexOutOfBoundsException("index out of bounds");
+      throw new IndexOutOfBoundsException(INDEX_OUT_OF_BOUNDS_MESSAGE + index);
     }
 
     Vector<T> newVect = new Vector<>(this.BUCKET_MAX_SIZE);
@@ -381,7 +386,7 @@ public class Vector<T> implements RandomAccess,
     if (this.size == 0) {
       return -1;
     }
-    return this.findIndex((T) o, this.root, 0);
+    return this.findIndex(o, this.root, 0);
   }
 
 
@@ -433,7 +438,7 @@ public class Vector<T> implements RandomAccess,
       offset -= cumulativeOffsets;
     }
 
-    lastCopied = (Node) cursor.clone();
+    lastCopied = Node.copy(cursor);
     this.insertToArray(lastCopied.values, value, offset, lastCopied.top);
     lastCopied.top++;
 
@@ -446,24 +451,24 @@ public class Vector<T> implements RandomAccess,
       cursor = visitedStack.pollLast();
       int index = visitedIndicesStack.pollLast();
 
-      Node cloned = (Node) cursor.clone();
+      Node copied = Node.copy(cursor);
 
-      cloned.counts[index] = lastCopied.getTotalCount();
-      cloned.links[index] = lastCopied;
+      copied.counts[index] = lastCopied.getTotalCount();
+      copied.links[index] = lastCopied;
 
       if (carry != null) {
-        this.insertToArray(cloned.links, carry, index + 1, cloned.top);
-        this.insertToArray(cloned.counts, carry.getTotalCount(), index + 1,
-            cloned.top);
-        cloned.top++;
+        this.insertToArray(copied.links, carry, index + 1, copied.top);
+        this.insertToArray(copied.counts, carry.getTotalCount(), index + 1,
+            copied.top);
+        copied.top++;
 
-        if (cloned.top > this.BUCKET_MAX_SIZE) {
-          carry = expandLinks(cloned);
+        if (copied.top > this.BUCKET_MAX_SIZE) {
+          carry = expandLinks(copied);
         } else {
           carry = null;
         }
       }
-      lastCopied = cloned;
+      lastCopied = copied;
     }
 
     if (carry != null) {
@@ -511,7 +516,7 @@ public class Vector<T> implements RandomAccess,
       offset -= cumulativeOffset;
     }
 
-    lastCopied = (Node) cursor.clone();
+    lastCopied = Node.copy(cursor);
 
     System
         .arraycopy(lastCopied.values, offset + 1, lastCopied.values, offset,
@@ -522,7 +527,7 @@ public class Vector<T> implements RandomAccess,
       cursor = visitedStack.pollLast();
       int index = visitedIndicesStack.pollLast();
 
-      Node cloned = (Node) cursor.clone();
+      Node cloned = Node.copy(cursor);
 
       cloned.counts[index] = lastCopied.getTotalCount();
       cloned.links[index] = lastCopied;

@@ -4,6 +4,7 @@ import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedList;
+import java.util.NoSuchElementException;
 
 
 /**
@@ -29,7 +30,7 @@ import java.util.LinkedList;
  * @param <T> type that this collection holds
  */
 @SuppressWarnings("unchecked")
-public class BTree<T extends Comparable<? super T>> implements
+public class BTree<T extends Comparable<T>> implements
     org.collections.Multiset<T> {
 
   @SuppressWarnings("unchecked")
@@ -50,6 +51,9 @@ public class BTree<T extends Comparable<? super T>> implements
 
     @Override
     public T next() {
+      if(this.top >= this.arr.length){
+        throw new NoSuchElementException("Iterator reached the end.");
+      }
       return (T) this.arr[this.top++];
     }
   }
@@ -73,7 +77,7 @@ public class BTree<T extends Comparable<? super T>> implements
     //in pivots and links
     int top;
 
-    public Node(Object[] array, int top, boolean isLeaf, int BUCKET_MAX_SIZE) {
+    public Node(Object[] array, int top, boolean isLeaf, int bucketMaxSize) {
       this.isLeaf = isLeaf;
       this.top = top;
 
@@ -81,7 +85,7 @@ public class BTree<T extends Comparable<? super T>> implements
         this.pivots = array;
       } else {
         this.links = array;
-        this.pivots = new Object[BUCKET_MAX_SIZE + 1];
+        this.pivots = new Object[bucketMaxSize + 1];
         for (int i = 0; i < top; i++) {
           this.pivots[i] = ((Node) this.links[i]).pivots[0];
         }
@@ -129,18 +133,18 @@ public class BTree<T extends Comparable<? super T>> implements
   private int size;
 
 
-  public BTree(Comparator<T> comparator, int BUCKET_MAX_SIZE) {
+  public BTree(Comparator<T> comparator, int bucketMaxSize) {
     this.comparator = comparator;
     this.size = 0;
-    this.BUCKET_MAX_SIZE = BUCKET_MAX_SIZE;
+    this.BUCKET_MAX_SIZE = bucketMaxSize;
   }
 
-  public BTree(int BUCKET_MAX_SIZE) {
-    this(Comparator.naturalOrder(), BUCKET_MAX_SIZE);
+  public BTree(int bucketMaxSize) {
+    this(Comparator.naturalOrder(), bucketMaxSize);
   }
 
   @Override
-  public Comparator<? super T> comparator() {
+  public Comparator<T> comparator() {
     return this.comparator;
   }
 
@@ -508,7 +512,8 @@ public class BTree<T extends Comparable<? super T>> implements
     int firstTop = ((Node) selected.links[forIndex - 1]).top;
     int secondTop = ((Node) selected.links[forIndex]).top;
 
-    Object[] firstSource, secondSource;
+    Object[] firstSource;
+    Object[] secondSource;
     if (usePivots) {
       firstSource = ((Node) selected.links[forIndex - 1]).pivots;
       secondSource = ((Node) selected.links[forIndex]).pivots;
@@ -623,7 +628,9 @@ public class BTree<T extends Comparable<? super T>> implements
     int middle = end / 2;
 
     int offset = 1;
-    int checkpoint, nextCheckpoint, sign;
+    int checkpoint;
+    int nextCheckpoint;
+    int sign;
     if (this.comparator.compare(value, (T) arr[middle]) < 0) {
       checkpoint = 0;
       nextCheckpoint = 0;
@@ -670,7 +677,9 @@ public class BTree<T extends Comparable<? super T>> implements
   private int searchNode(Object[] arr, T value, int end) {
     int middle = end / 2;
     int offset = 1;
-    int checkpoint, nextCheckpoint, sign;
+    int checkpoint;
+    int nextCheckpoint;
+    int sign;
     if (this.comparator.compare(value, (T) arr[middle]) < 0) {
       checkpoint = 0;
       nextCheckpoint = 0;

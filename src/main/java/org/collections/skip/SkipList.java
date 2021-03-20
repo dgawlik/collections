@@ -4,6 +4,7 @@ import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedList;
+import java.util.NoSuchElementException;
 import java.util.Random;
 import org.collections.Multiset;
 
@@ -19,7 +20,8 @@ import org.collections.Multiset;
  *
  * @param <T>
  */
-public class SkipList<T extends Comparable<? super T>> implements Multiset<T> {
+@SuppressWarnings("unchecked")
+public class SkipList<T extends Comparable<T>> implements Multiset<T> {
 
   private static class Iterator<T> implements java.util.Iterator<T> {
 
@@ -36,6 +38,10 @@ public class SkipList<T extends Comparable<? super T>> implements Multiset<T> {
 
     @Override
     public T next() {
+      if (this.current == null) {
+        throw new NoSuchElementException("Iterator reached the end.");
+      }
+
       T val = current.value;
       current = current.levels.next;
       return val;
@@ -46,10 +52,10 @@ public class SkipList<T extends Comparable<? super T>> implements Multiset<T> {
 
   //leftmost node in skip list
   //holds maximum number of levels
-  private SkipListNode<T> START;
+  private SkipListNode<T> start;
 
   //rightmost node in skip list
-  private SkipListNode<T> END;
+  private SkipListNode<T> end;
 
   private final Random rng;
 
@@ -90,7 +96,7 @@ public class SkipList<T extends Comparable<? super T>> implements Multiset<T> {
 
   @Override
   public Iterator<T> iterator() {
-    return new Iterator<>(this.START);
+    return new Iterator<>(this.start);
   }
 
   @Override
@@ -120,7 +126,7 @@ public class SkipList<T extends Comparable<? super T>> implements Multiset<T> {
 
     if (visitedStack.isEmpty()) {
       //add only node with 0-level
-      this.START = this.END = insertedNode;
+      this.start = this.end = insertedNode;
     } else {
 
       //stack of visited level-nodes
@@ -131,15 +137,15 @@ public class SkipList<T extends Comparable<? super T>> implements Multiset<T> {
       //switch START.value with insertedNode.value
       //and add insertedNode as usual
       if (this.comparator.compare(value, top.value) < 0) {
-        T temp = this.START.value;
-        this.START.value = insertedNode.value;
+        T temp = this.start.value;
+        this.start.value = insertedNode.value;
         insertedNode.value = temp;
       }
 
       //if shallowest level next points
       //to null we are at the end of list
       if (top.levels.next == null) {
-        this.END = insertedNode;
+        this.end = insertedNode;
       }
       //insert node and update shallowest level reference
       insertedNode.levels.next = top.levels.next;
@@ -168,7 +174,7 @@ public class SkipList<T extends Comparable<? super T>> implements Multiset<T> {
       //and insertedNode by one level
       if (visitedStack.isEmpty() && prob < 0.5) {
         this.newLevel(insertedNode, levelCounter);
-        LevelNode<T> startLevel = this.newLevel(this.START, levelCounter);
+        LevelNode<T> startLevel = this.newLevel(this.start, levelCounter);
         startLevel.next = insertedNode;
         this.maxLevel++;
       }
@@ -189,16 +195,19 @@ public class SkipList<T extends Comparable<? super T>> implements Multiset<T> {
 
     //the only node matches query
     if (this.size == 1) {
-      this.START = this.END = null;
+      this.start = this.end = null;
       this.size--;
       return true;
     }
 
     LinkedList<SkipListNode<T>> visitedStack = this.search(value, true);
+    return removeDo(visitedStack);
+  }
 
+  private boolean removeDo(LinkedList<SkipListNode<T>> visitedStack) {
     if (visitedStack.peekLast() == null) {
       //the value is first in skip list
-      SkipListNode<T> nextToStart = this.START.levels.next;
+      SkipListNode<T> nextToStart = this.start.levels.next;
       int currentLevel = 0;
 
       //pick node next to start if number of levels is
@@ -206,11 +215,11 @@ public class SkipList<T extends Comparable<? super T>> implements Multiset<T> {
       while (currentLevel <= this.maxLevel) {
         if (nextToStart.levels.moveUpBy(currentLevel) == null) {
           LevelNode<T> insertedLevel = this.newLevel(nextToStart, currentLevel);
-          insertedLevel.next = this.START.levels.moveUpBy(currentLevel).next;
+          insertedLevel.next = this.start.levels.moveUpBy(currentLevel).next;
         }
         currentLevel++;
       }
-      this.START = nextToStart;
+      this.start = nextToStart;
     } else {
       int currentLevel = 0;
       SkipListNode<T> toBeRemoved = visitedStack.peekLast().levels.next;
@@ -230,7 +239,6 @@ public class SkipList<T extends Comparable<? super T>> implements Multiset<T> {
     }
     this.size--;
     return true;
-
   }
 
   @Override
@@ -263,8 +271,8 @@ public class SkipList<T extends Comparable<? super T>> implements Multiset<T> {
       }
     }
     boolean changed = this.size == newSkip.size;
-    this.START = newSkip.START;
-    this.END = newSkip.END;
+    this.start = newSkip.start;
+    this.end = newSkip.end;
     this.maxLevel = newSkip.maxLevel;
     this.size = newSkip.size;
     return changed;
@@ -284,30 +292,30 @@ public class SkipList<T extends Comparable<? super T>> implements Multiset<T> {
 
   @Override
   public void clear() {
-    this.START = this.END = null;
+    this.start = this.end = null;
     this.size = 0;
   }
 
   @Override
-  public Comparator<? super T> comparator() {
+  public Comparator<T> comparator() {
     return this.comparator;
   }
 
   @Override
   public T first() {
-    return this.START.value;
+    return this.start.value;
   }
 
   @Override
   public T last() {
-    return this.END.value;
+    return this.end.value;
   }
 
   @Override
   public String toString() {
     StringBuilder builder = new StringBuilder();
     builder.append("SkipList = ");
-    SkipListNode<T> current = this.START;
+    SkipListNode<T> current = this.start;
     while (current != null) {
       builder.append("[")
           .append(current.value)
@@ -334,7 +342,7 @@ public class SkipList<T extends Comparable<? super T>> implements Multiset<T> {
     }
 
     int currentLevel = this.maxLevel;
-    SkipListNode<T> currentNode = this.START;
+    SkipListNode<T> currentNode = this.start;
     SkipListNode<T> predecessorNode = null;
     LinkedList<SkipListNode<T>> visitedStack = new LinkedList<>();
 
@@ -354,7 +362,8 @@ public class SkipList<T extends Comparable<? super T>> implements Multiset<T> {
       //on lower levels predecessor node can be lagging couple
       //of hops behind current node, let's rewind it
       if (predecessorNode != null) {
-        while (predecessorNode.levels.moveUpBy(currentLevel).next != currentNode) {
+        while (predecessorNode.levels.moveUpBy(currentLevel).next
+            != currentNode) {
           predecessorNode = predecessorNode.levels.moveUpBy(currentLevel).next;
         }
       }
@@ -369,7 +378,7 @@ public class SkipList<T extends Comparable<? super T>> implements Multiset<T> {
   }
 
   private <U> void fillArray(U[] arr) {
-    SkipListNode<T> it = this.START;
+    SkipListNode<T> it = this.start;
     int ind = 0;
     while (it != null) {
       arr[ind++] = (U) it.value;

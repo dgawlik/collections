@@ -12,7 +12,7 @@ class BTreeTest {
   private Random rnd = new Random(1);
 
   @Test
-  public void insert_random_numbers() {
+  void insert_random_numbers() {
     BTree<Integer> vct = new BTree<>(4);
     Integer[] arr = this.prepare(80, 50);
     for (Integer i : arr) {
@@ -24,7 +24,7 @@ class BTreeTest {
   }
 
   @Test
-  public void delete_random_numbers() {
+  void delete_random_numbers() {
     TreeSet<Integer> reference = new TreeSet<>();
     BTree<Integer> sut = new BTree<>(4);
 
@@ -47,7 +47,7 @@ class BTreeTest {
   }
 
   @Test
-  public void unable_to_remove_from_empty(){
+  void unable_to_remove_from_empty(){
     BTree<Integer> vct = new BTree<>(16);
     vct.add(1);
     vct.add(2);
@@ -58,7 +58,7 @@ class BTreeTest {
   }
 
   @Test
-  public void contains_is_correct(){
+  void contains_is_correct(){
     BTree<Integer> vct = new BTree<>(16);
     vct.add(1);
     vct.add(2);
@@ -70,7 +70,7 @@ class BTreeTest {
   }
 
   @Test
-  public void iterator(){
+  void iterator(){
     BTree<Integer> vct = new BTree<>(16);
     vct.add(1);
     vct.add(2);

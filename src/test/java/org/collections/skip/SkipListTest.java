@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 class SkipListTest {
 
   @Test
-  public void insertion() {
+  void insertion() {
     var sklst = new SkipList<Integer>(Comparator.naturalOrder());
 
     sklst.add(5);
@@ -27,7 +27,7 @@ class SkipListTest {
   }
 
   @Test
-  public void insertionBig() {
+  void insertionBig() {
     var sklst = new SkipList<Integer>(Comparator.naturalOrder());
 
     var arr = new Integer[10];
@@ -46,7 +46,7 @@ class SkipListTest {
   }
 
   @Test
-  public void deletion() {
+  void deletion() {
     var sklst = new SkipList<Integer>(Comparator.naturalOrder());
 
     sklst.add(5);
@@ -64,7 +64,7 @@ class SkipListTest {
   }
 
   @Test
-  public void deletionBig() {
+  void deletionBig() {
     var sklst = new SkipList<Integer>(Comparator.naturalOrder());
 
     var arr = new ArrayList<Integer>();
@@ -91,7 +91,7 @@ class SkipListTest {
   }
 
   @Test
-  public void retainAll() {
+  void retainAll() {
     var sklst = new SkipList<Integer>(Comparator.naturalOrder());
 
     sklst.add(5);
@@ -108,7 +108,7 @@ class SkipListTest {
   }
 
   @Test
-  public void containsAll() {
+  void containsAll() {
     var sklst = new SkipList<Integer>(Comparator.naturalOrder());
 
     sklst.add(5);
@@ -124,7 +124,7 @@ class SkipListTest {
   }
 
   @Test
-  public void removeAll() {
+  void removeAll() {
     var sklst = new SkipList<Integer>(Comparator.naturalOrder());
 
     sklst.add(5);

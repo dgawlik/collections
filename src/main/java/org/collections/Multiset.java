@@ -3,9 +3,9 @@ package org.collections;
 import java.util.Collection;
 import java.util.Comparator;
 
-public interface Multiset<T extends Comparable<? super T>> extends Collection<T>{
+public interface Multiset<T extends Comparable<T>> extends Collection<T>{
 
-  Comparator<? super T> comparator();
+  Comparator<T> comparator();
 
   T first();
 
