@@ -98,7 +98,7 @@ class VectorTest {
 
 
   @Test
-  public void test_iterator(){
+  void test_iterator(){
     var vect = new Vector<Integer>(4);
 
     int[] ref = new int[20];
@@ -118,7 +118,7 @@ class VectorTest {
   }
 
   @Test
-  public void contains_all(){
+  void contains_all(){
     var vect = new Vector<Integer>(4);
 
     vect = vect.addAll(List.of(1,2,3,4));

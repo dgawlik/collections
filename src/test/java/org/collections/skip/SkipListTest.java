@@ -141,7 +141,7 @@ class SkipListTest {
   }
 
   @Test
-  public void test_iterator() {
+  void test_iterator() {
     SkipList<Integer> lst = new SkipList<>();
     lst.add(1);
     lst.add(2);
@@ -157,7 +157,7 @@ class SkipListTest {
   }
 
   @Test
-  public void test_first(){
+  void test_first(){
     var lst = new SkipList<Integer>();
 
     lst.add(1);
@@ -167,7 +167,7 @@ class SkipListTest {
   }
 
   @Test
-  public void test_last(){
+  void test_last(){
     var lst = new SkipList<Integer>();
 
     lst.add(1);

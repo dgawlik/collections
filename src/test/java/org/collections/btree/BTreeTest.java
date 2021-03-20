@@ -85,16 +85,8 @@ class BTreeTest {
     assertEquals("1,2,", sb.toString());
   }
 
-  private Integer[] prepare(int size, int max) {
-    Integer[] arr = new Integer[size];
-    for (int i = 0; i < size; i++) {
-      arr[i] = this.rnd.nextInt(max);
-    }
-    return arr;
-  }
-
   @Test
-  public void bulk_ops(){
+  void bulk_ops(){
     var btree = new BTree<Integer>(4);
 
     btree.addAll(List.of(1,2,3,4,5,6));
@@ -107,4 +99,13 @@ class BTreeTest {
     Assertions.assertEquals(2, btree.size());
     Assertions.assertTrue(btree.containsAll(List.of(3,4)));
   }
+
+  private Integer[] prepare(int size, int max) {
+    Integer[] arr = new Integer[size];
+    for (int i = 0; i < size; i++) {
+      arr[i] = this.rnd.nextInt(max);
+    }
+    return arr;
+  }
+
 }
