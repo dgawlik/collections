@@ -1,4 +1,7 @@
 # collections
+![status](https://github.com/dgawlik/collections/actions/workflows/build.yml/badge.svg)
+![version](https://img.shields.io/github/v/release/dgawlik/collections)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=dgawlik_collections&metric=alert_status)](https://sonarcloud.io/dashboard?id=dgawlik_collections)
 
 **Exotic data structures in Java!**
 
