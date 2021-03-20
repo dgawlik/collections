@@ -189,7 +189,7 @@ public class Vector<T> implements RandomAccess,
     if (this.size > 0) {
       fillArray(arr, 0, this.root);
     }
-    return new Iterator<>(arr);
+    return new Iterator<>(arr); 
   }
 
   public Object[] toArray() {
