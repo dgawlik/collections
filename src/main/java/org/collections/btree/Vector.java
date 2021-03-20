@@ -229,13 +229,11 @@ public class Vector<T> implements RandomAccess,
    * @return new vector
    */
   public Vector<T> remove(Object value) {
-    Vector<T> newVect = new Vector<>(this.BUCKET_MAX_SIZE);
     if (this.size == 0 || !this.contains(value)) {
-      for (T elem : this) {
-        newVect = newVect.add(elem);
-      }
-      return newVect;
+      return this;
     }
+
+    Vector<T> newVect = new Vector<>(this.BUCKET_MAX_SIZE);
     int offset = this.findIndex((T) value, this.root, 0);
     newVect.root = this.removeAt(offset);
     newVect.size = this.size - 1;

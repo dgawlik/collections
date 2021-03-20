@@ -5,7 +5,7 @@ import org.collections.btree.Vector;
 class VectorPerformanceTest {
 
   public static void main(String[] args) {
-    VectorPerformanceTest.append();
+    VectorPerformanceTest.pop_first();
   }
 
   public static void append() {
